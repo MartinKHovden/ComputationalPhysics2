@@ -76,6 +76,6 @@ double WaveFunction(double alpha, double beta, arma::mat r, int n_particles, int
  */
 double CorrelationWaveFunction(double alpha, double beta, arma::subview_row<double> r_i, arma::subview_row<double> r_j, int n_particles, int num_dims, double a)
 {
-    
+    int test = 0;
     return 0;
 }
