@@ -7,7 +7,7 @@ using namespace arma;
 using namespace std; 
 
 double WaveFunction(double alpha, double beta, arma::mat r, int n_particles, int num_dims, double a);
-double CorrelationWaveFunction(double alpha, double beta, arma::subview_row<double> r_i, arma::subview_row<double> r_j, int n_particles, int num_dims, double a);
+double CorrelationWaveFunction(arma::subview_row<double> r_i, arma::subview_row<double> r_j, double a, int num_dims);
 
 int main(int nargs, char * args[])
 {
@@ -65,7 +65,8 @@ double WaveFunction(double alpha, double beta, arma::mat r, int n_particles, int
     double g = exp(-alpha*exp_argument);
 
     //Calculates f (correlation wavefunction) in the wavefunction. 
-    double test = CorrelationWaveFunction(alpha, beta, r.row(2), r.row(3), n_particles, num_dims, a);
+    double test = CorrelationWaveFunction(r.row(2), r.row(3), num_dims, a);
+    cout << test << endl;
     return g;
 }
 
@@ -74,8 +75,27 @@ double WaveFunction(double alpha, double beta, arma::mat r, int n_particles, int
  * @param
  * @returns
  */
-double CorrelationWaveFunction(double alpha, double beta, arma::subview_row<double> r_i, arma::subview_row<double> r_j, int n_particles, int num_dims, double a)
+double CorrelationWaveFunction(arma::subview_row<double> r_i, arma::subview_row<double> r_j, double a, int num_dims)
 {
-    int test_2 = 0;
-    return 0;
+    double distance_between_points = 0;
+
+    for(int i = 0; i < num_dims; i++)
+    {
+        distance_between_points += (r_i(i) - r_j(i))*(r_i(i) - r_j(i));
+    }
+
+    distance_between_points = sqrt(distance_between_points);
+
+    double return_value;
+
+    if(distance_between_points < a)
+    {
+        return_value = 0;
+    }
+    else
+    {
+        return_value = 1 - a/distance_between_points;
+    }
+    
+    return return_value;
 }
