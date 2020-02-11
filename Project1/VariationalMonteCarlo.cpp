@@ -8,6 +8,8 @@ using namespace std;
 
 double WaveFunction(double alpha, double beta, arma::mat r, int n_particles, int num_dims, double a);
 double CorrelationWaveFunction(arma::subview_row<double> r_i, arma::subview_row<double> r_j, double a, int num_dims);
+double LocalEnergy(arma::mat r, double alpha, double beta);
+
 
 int main(int nargs, char * args[])
 {
@@ -20,13 +22,13 @@ int main(int nargs, char * args[])
     int num_dimensions = atoi(args[1]);
 
     mat A(num_particles, num_dimensions, fill::randu);
-    A.print("A: ");
+    // A.print("A: ");
 
     double alpha = 2.;
     double beta = 1.;
-    double a = 1.;
+    double a = 0.;
 
-    cout << WaveFunction(alpha, beta, A, num_particles, num_dimensions, a) << endl;
+    cout << "WaveFunction value... = " << WaveFunction(alpha, beta, A, num_particles, num_dimensions, a) << endl;
 }
 
 /**
@@ -44,8 +46,10 @@ double WaveFunction(double alpha, double beta, arma::mat r, int n_particles, int
     //wavefunction. 
     for(int i = 0; i < n_particles; i++)
     {
+
         double temp = 0;
 
+        // Calculating the argument for each particle
         for(int dim = 0; dim < num_dims; dim++)
         {
             if(dim == 2)
@@ -62,12 +66,28 @@ double WaveFunction(double alpha, double beta, arma::mat r, int n_particles, int
     }
 
     //Takes the exponential of the argument. 
-    double g = exp(-alpha*exp_argument);
+    double g_product = exp(-alpha*exp_argument);
 
     //Calculates f (correlation wavefunction) in the wavefunction. 
     double test = CorrelationWaveFunction(r.row(2), r.row(3), num_dims, a);
-    cout << test << endl;
-    return g;
+
+    double corr_func_product = CorrelationWaveFunction(r.row(0), r.row(1), num_dims, a);
+
+    cout << corr_func_product << endl;
+
+    for (int k = 2; k < n_particles; k++)
+    {
+        for (int j = 0; j < k; j++)
+        {
+            corr_func_product *= CorrelationWaveFunction(r.row(j), r.row(k), num_dims, a);
+            cout << corr_func_product << endl;
+        }
+    }
+
+    cout << g_product << endl;
+    cout << corr_func_product << endl;
+
+    return g_product*corr_func_product;
 }
 
 /**
@@ -88,7 +108,7 @@ double CorrelationWaveFunction(arma::subview_row<double> r_i, arma::subview_row<
 
     double return_value;
 
-    if(distance_between_points < a)
+    if(abs(distance_between_points) < a)
     {
         return_value = 0;
     }
@@ -96,6 +116,15 @@ double CorrelationWaveFunction(arma::subview_row<double> r_i, arma::subview_row<
     {
         return_value = 1 - a/distance_between_points;
     }
-    
     return return_value;
+}
+
+/**
+ *  Function for calculating the local energy of the system.
+ * @param 
+ * @returns
+ */  
+double LocalEnergy(arma::mat r, double alpha, double beta)
+{
+
 }
