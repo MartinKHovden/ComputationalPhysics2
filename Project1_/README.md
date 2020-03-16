@@ -10,6 +10,4 @@ To run the desired simulation, you can set up the system in main.cpp. When the d
 #### Cleaning the directory
 Run `make clean` in the top-directory to remove the executable `vmc` and the `build`-directory.
 
-#### Windows
-Compilation of the project using Windows is still an open question to me, but please include a pull-request if you've got an example. CMake should be OS-independent, but `make` does not work on Windows.
 
