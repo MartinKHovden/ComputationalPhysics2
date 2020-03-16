@@ -1,5 +1,5 @@
 # Variational Monte Carlo
-The structure of the program is based on the example structure given by the teaching staff in FYS4411. See: https://github.com/Schoyen/variational-monte-carlo-fys4411 . 
+(The structure of the program is based on the example structure given by the teaching staff in FYS4411. See: https://github.com/Schoyen/variational-monte-carlo-fys4411.)
 
 In this project we study particles trapped in different potentials. We start by looking at a non-interacting system, where the there is no forces between the particles in the system. After that we will introduce a new wavefunction where the interactions between the particles are considered. 
 
