@@ -10,4 +10,7 @@ To run the desired simulation, you can set up the system in main.cpp. When the d
 #### Cleaning the directory
 Run `make clean` in the top-directory to remove the executable `vmc` and the `build`-directory.
 
+## Testing
+To test the code, use: 
+
 
