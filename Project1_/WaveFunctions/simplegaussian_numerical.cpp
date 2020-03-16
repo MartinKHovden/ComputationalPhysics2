@@ -6,7 +6,7 @@
 #include "../particle.h"
 #include "stdio.h"
 #include <iostream>
-
+ 
 using namespace std;
 
 SimpleGaussianNumerical::SimpleGaussianNumerical(class System* system, double alpha) :
