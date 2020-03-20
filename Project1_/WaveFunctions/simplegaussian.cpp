@@ -46,6 +46,7 @@ double SimpleGaussian::evaluate(std::vector<class Particle*> particles) {
     return g_product;
 }
 
+
 double SimpleGaussian::computeDoubleDerivative(std::vector<class Particle*> particles) {
     /* All wave functions need to implement this function, so you need to
      * find the double derivative analytically. Note that by double derivative,

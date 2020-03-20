@@ -9,6 +9,7 @@ public:
     void computeAverages();
     double getEnergy()                         { return m_energy; }
     double getLocalEnergy()                    { return m_localEnergy; }
+    double getCumulativeLocalEnergy()          { return m_cumulativeEnergy; }
     double getEnergyTimesAlphaDerivative()     { return m_energyTimesAlphaDerivative; }
     double getAlphaDerivative()                { return m_alphaDerivative; }
 

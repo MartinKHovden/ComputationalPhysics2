@@ -31,6 +31,10 @@ public:
     int getNumberOfMetropolisSteps()    { return m_numberOfMetropolisSteps; }
     double getEquilibrationFraction()   { return m_equilibrationFraction; }
     double getStepLength()              { return m_stepLength; }
+    double getCurrentWavefunctionValue()     { return m_currentWavefunctionValue; }
+    void setCurrentWavefunctionValue(double wfValue)     { m_currentWavefunctionValue = wfValue; }
+    std::vector<double> getCurrentPosition() { return m_currentPosition; }
+    void setCurrentPosition(std::vector<double> pos)                { m_currentPosition = pos; }
 
 private:
     int                             m_numberOfParticles = 0;
@@ -42,6 +46,8 @@ private:
     double                          m_equilibrationFraction = 0.0;
     double                          m_stepLength = 0.1;
     double                          m_D = 1; 
+    double                          m_currentWavefunctionValue = 0;
+    std::vector<double>             m_currentPosition = {0,0,0};
     class WaveFunction*             m_waveFunction = nullptr;
     class Hamiltonian*              m_hamiltonian = nullptr;
     class InitialState*             m_initialState = nullptr;

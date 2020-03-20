@@ -64,6 +64,7 @@ double SimpleGaussianNumerical::computeDoubleDerivative(std::vector<class Partic
     double wavefunction_value = evaluate(particles);
 
     double h = 0.001;
+    double alpha = m_parameters[0];
 
     for(int i = 0; i < num_particles; i++)
     {

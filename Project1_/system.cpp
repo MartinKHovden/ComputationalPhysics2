@@ -12,6 +12,7 @@
 #include <math.h>
 #include <random>
 #include <fstream> 
+#include <time.h>
 
 using namespace std;
 
@@ -84,7 +85,11 @@ void System::runMetropolisSteps(int numberOfMetropolisSteps) {
     m_numberOfMetropolisSteps   = numberOfMetropolisSteps;
     m_sampler->setNumberOfMetropolisSteps(numberOfMetropolisSteps);
 
+    ofstream outfile;
+    outfile.open("interacting_metropolis_local_energy_values_a_" + to_string(getA()) + "num_particles_" + to_string(getNumberOfParticles()) + "num_dims_" + to_string(getNumberOfDimensions()) + "alpha_" + to_string(getWaveFunction()->getParameters()[0]) + ".txt"  );
+
   
+    clock_t start_time = clock();
 
     for (int i=0; i < numberOfMetropolisSteps; i++) {
         bool acceptedStep = metropolisStep();
@@ -96,9 +101,27 @@ void System::runMetropolisSteps(int numberOfMetropolisSteps) {
          * are equilibration steps; m_equilibrationFraction.
          */
         m_sampler->sample(acceptedStep);
+        outfile << m_sampler->getLocalEnergy() << endl;
+
+        if( i % 1000 ==0)
+        {
+            cout << i << endl;
+        }
+
     }
+
+    clock_t end_time = clock();
+
+
     m_sampler->computeAverages();
     m_sampler->printOutputToTerminal();
+
+    cout << "Time elapsed: " << ((float)(end_time - start_time))/CLOCKS_PER_SEC << " sec" << endl;
+
+    outfile << "Time: " << ((float)(end_time - start_time))/CLOCKS_PER_SEC << endl;
+
+    outfile.close();
+
 }
 
 bool System::importanceSamplingStep(double timestep)
@@ -172,7 +195,10 @@ void System::runImportanceSamplingSteps(int numberOfImportanceSamplingSteps, dou
     m_sampler->setNumberOfMetropolisSteps(numberOfImportanceSamplingSteps);
 
     ofstream outfile;
-    outfile.open("local_energy_values_importance_sampling_non_interacting.txt");
+    outfile.open("importance_sampling_local_energy_values_a_" + to_string(getA()) + "num_particles_" + to_string(getNumberOfParticles()) + "num_dims_" + to_string(getNumberOfDimensions()) + "alpha_" + to_string(getWaveFunction()->getParameters()[0]) + ".txt" );
+
+
+    time_t start_time = clock();
 
     for (int i=0; i < numberOfImportanceSamplingSteps; i++) {
         bool acceptedStep = importanceSamplingStep(timestep);
@@ -185,15 +211,21 @@ void System::runImportanceSamplingSteps(int numberOfImportanceSamplingSteps, dou
          */
         m_sampler->sample(acceptedStep);
         outfile << m_sampler->getLocalEnergy() << endl;
-        if(i % 100 == 0)
-        {
-            cout << i << endl;
-        }
+        // if(i % 100 == 0)
+        // {
+        //     cout << i << endl;
+        // }
     }
+
+    time_t end_time = clock();
+
+    outfile << "Time elapsed: " << ((float)(end_time - start_time))/CLOCKS_PER_SEC << " sec" << endl;
 
     outfile.close();
     m_sampler->computeAverages();
     m_sampler->printOutputToTerminal();
+
+    cout << "Time elapsed: " << ((float)(end_time - start_time))/CLOCKS_PER_SEC << " sec" << endl;
 }
 
 double System::runGradientDescent(double stepLength, double initialAlphaValue)

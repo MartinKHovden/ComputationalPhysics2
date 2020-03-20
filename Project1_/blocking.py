@@ -7,7 +7,9 @@ DATA_ID = ""
 def data_path(dat_id):
     return os.path.join(DATA_ID, dat_id)
 
-infile = open(data_path("local_energy_values_importance_sampling_non_interacting.txt"),'r')
+# infile = open(data_path("importance_sampling_local_energy_values_a_0.000000num_particles_10num_dims_1alpha_0.400000.txt"),'r')
+infile = open(data_path("metropolis_local_energy_values_a_0.000000num_particles_10num_dims_1alpha_0.400000.txt"),'r')
+
 
 from numpy import log2, zeros, mean, var, sum, loadtxt, arange, array, cumsum, dot, transpose, diagonal, sqrt
 from numpy.linalg import inv
@@ -45,7 +47,7 @@ def block(x):
     return mu, s[k]/2**(d-k)
 
 
-x = loadtxt(infile)
+x = loadtxt(infile, max_rows = 10**6)
 (mean, var) = block(x) 
 std = sqrt(var)
 import pandas as pd

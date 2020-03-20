@@ -104,6 +104,7 @@ double EllipticalGaussianAnalytical::calculate_distance(std::vector<double> r1_p
     return sqrt(temp);
 }
 
+
 double EllipticalGaussianAnalytical::computeDoubleDerivative(std::vector<class Particle*> particles)
 {
     double double_derivative = 0;
