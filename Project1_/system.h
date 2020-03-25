@@ -19,6 +19,7 @@ public:
     void setWaveFunction            (class WaveFunction* waveFunction);
     void setInitialState            (class InitialState* initialState);
     double runGradientDescent       (double stepLength, double initialAlphaValue);
+    void runComputeOneBodyDensity   (int numberOfMetropolisSteps);
     class WaveFunction*             getWaveFunction()   { return m_waveFunction; }
     class Hamiltonian*              getHamiltonian()    { return m_hamiltonian; }
     class Sampler*                  getSampler()        { return m_sampler; }
@@ -41,7 +42,7 @@ private:
     int                             m_numberOfDimensions = 0;
     int                             m_numberOfMetropolisSteps = 0;
     int                             m_a = 0;
-    double                          m_beta = 1;
+    double                          m_beta = 1; 
     double                          m_gamma = 1;
     double                          m_equilibrationFraction = 0.0;
     double                          m_stepLength = 0.1;

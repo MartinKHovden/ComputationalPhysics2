@@ -48,10 +48,12 @@ void RandomUniform::setupInitialState() {
              * obviously NOT a good idea).
              */
             // double position = rand()/RAND_MAX;
-            position.push_back(Normaldistribution2(gen2)*sqrt(0.1));
+            position.push_back(Normaldistribution2(gen2)*m_system->getStepLength());
+            cout << m_system->getStepLength() << endl;
             // position.push_back((rand()/RAND_MAX) - 0.5);
             // position.push_back(i);
         }
+
         m_particles.push_back(new Particle());
         m_particles.at(i)->setNumberOfDimensions(m_numberOfDimensions);
         m_particles.at(i)->setPosition(position);

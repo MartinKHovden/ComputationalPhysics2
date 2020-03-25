@@ -119,31 +119,40 @@ double EllipticalGaussianAnalytical::computeDoubleDerivative(std::vector<class P
     {
         std::vector<double> particle_k_position = particles[k]->getPosition();
 
-        //Calculating term 1
-        double temp1 = 0;
+        //Calculating term 1: laplacian of phi divided by phi
+        double term1 = 0;
         int num_dims = m_system->getNumberOfDimensions();
 
         for(int dim = 0; dim < num_dims; dim++)
         {
             if(dim == 2)
             {
-                temp1 += 4*alpha*alpha*beta*beta*particle_k_position[dim]*particle_k_position[dim];
-                temp1 -= 2*alpha*beta;
+                term1 += 4*alpha*alpha*beta*beta*particle_k_position[dim]*particle_k_position[dim];
+                term1 -= 2*alpha*beta;
             }
             else 
             {
-                temp1 += 4*alpha*alpha*particle_k_position[dim]*particle_k_position[dim];
-                temp1 -= 2*alpha;
+                term1 += 4*alpha*alpha*particle_k_position[dim]*particle_k_position[dim];
+                term1 -= 2*alpha;
             }
         }
 
         // std::cout <<  "Temp1 : " << temp1 << std::endl;
 
-        double_derivative += temp1;
+        double_derivative += term1;
 
-        //Calculating term 2
+        //Calculating term 2 and 3
 
-        double temp2 = 0;
+        double term2 = 0;
+        double term3 = 0;
+
+        std::vector<double> temp4;
+        temp4.resize(num_dims);
+
+        for(int dim = 0; dim < num_dims; dim++)
+        {
+            temp4[dim] = 0;
+        }
 
         for(int j = 0; j < num_particles; j++)
         {
@@ -151,67 +160,51 @@ double EllipticalGaussianAnalytical::computeDoubleDerivative(std::vector<class P
 
             double temp3 = 0;
 
-            // cout << "Test" << endl;
-
             if(j != k)
             {
+                double r_jk = calculate_distance(particle_j_position, particle_k_position);
+                double u_derivative_r_jk = computeUDerivative(particle_j_position, particle_k_position, a);
+
                 for (int dim = 0; dim < num_dims; dim++)
                 {
-                    temp3 += particle_k_position[dim]*(particle_k_position[dim] - particle_j_position[dim])*computeUDerivative(particle_j_position, particle_k_position, a);
+                    if(dim == 2)
+                    {
+                        temp3 += -2*alpha*particle_k_position[dim]*(particle_k_position[dim] - particle_j_position[dim]);
+
+                    }
+                    else
+                    {
+                        temp3 += -2*alpha*beta*particle_k_position[dim]*(particle_k_position[dim] - particle_j_position[dim]);
+                    }
+                    
+                    temp4[dim] += (particle_k_position[dim] - particle_j_position[dim])*u_derivative_r_jk/r_jk;
                 }
 
-                temp3 = temp3/calculate_distance(particle_j_position, particle_k_position);
+                temp3 = temp3*computeUDerivative(particle_j_position, particle_k_position, a)/r_jk;
 
-                temp2 += temp3;
+                term2 += temp3;
 
             }
             else 
             {
-                temp2+= 0;
+                term2 += 0;
             }
 
             
         }
 
-        // std::cout <<  "Temp2 : " << temp2 << std::endl;
 
-        double_derivative += temp2;
-
-        //Calculating term 3
-        double temp4 = 0;
-
-        for(int i = 0; i < num_particles; i++)
+        for(int dim = 0; dim < num_dims; dim++)
         {
-            std::vector<double> particle_i_position = particles[i]->getPosition();
-            for(int j = 0; j < num_particles ; j++)
-            {
-
-                std::vector<double> particle_j_position = particles[j]->getPosition();
-                double temp5 = 0;
-
-                if( i!= k && j!=k)
-                {
-                    for(int dim = 0; dim < num_dims; dim++)
-                    {
-                        temp5 += (particle_k_position[dim] - particle_i_position[dim])*(particle_k_position[dim] - particle_j_position[dim]);
-                    }
-                    temp5 = temp5 * computeUDerivative(particle_k_position, particle_i_position, a)*computeUDerivative(particle_k_position, particle_j_position, a);
-                    temp5 = temp5/(calculate_distance(particle_k_position, particle_i_position)*calculate_distance(particle_k_position, particle_j_position));
-                    temp4 += temp5;
-                }
-                else 
-                {
-                    temp5 = 0;
-                    temp4 += temp5;
-                }
-            }
+            term3 += temp4[dim]*temp4[dim];
         }
 
-        // std::cout <<  "Temp4 : " << temp4 << std::endl;
+        double_derivative += term3;
 
+        // std::cout <<  "Temp2 : " << temp2 << std::endl;
 
-        double_derivative += temp4;
-
+        double_derivative += term2;
+   
         //Calculating term 5
         double temp6 = 0;
 
@@ -230,9 +223,6 @@ double EllipticalGaussianAnalytical::computeDoubleDerivative(std::vector<class P
             } 
  
         }
-
-        // std::cout <<  "Temp6 : " << temp6 << std::endl;
-
 
         double_derivative += temp6;
 

@@ -25,11 +25,11 @@ double HarmonicOscillatorInteracting::computeLocalEnergy(std::vector<Particle*> 
      * getWaveFunction method in the m_system object in the super-class, i.e.
      * m_system->getWaveFunction()...
      */ 
-    class WaveFunction* temp = m_system->getWaveFunction();
+    // class WaveFunction* temp = m_system->getWaveFunction();
 
-    std::vector<double> system_params = temp->getParameters();
+    // std::vector<double> system_params = temp->getParameters();
 
-    double alpha = system_params[0];
+    // double alpha = system_params[0];
     double mass = 1;
     double gamma = m_system->getGamma();
 
@@ -37,6 +37,7 @@ double HarmonicOscillatorInteracting::computeLocalEnergy(std::vector<Particle*> 
     int num_dimensions = m_system->getNumberOfDimensions();
 
     //Calculating the kinetic energy:
+    // double kinetic_energy = 1;
     double kinetic_energy = m_system->getWaveFunction()->computeDoubleDerivative(particles);
     kinetic_energy *= -0.5;
 
@@ -64,9 +65,12 @@ double HarmonicOscillatorInteracting::computeLocalEnergy(std::vector<Particle*> 
     term2 = 0.5*term2;
 
     //Calculating the last term of the Hamiltonian:
-    double term3 = computeTotalPotentialInt(particles);
+    // double term3 = computeTotalPotentialInt(particles);
+    double term3=0;
 
     double local_energy = kinetic_energy + term2 + term3; 
+
+    return local_energy;
 }
 
 double HarmonicOscillatorInteracting::computeTotalPotentialInt(std::vector<Particle*> particles)

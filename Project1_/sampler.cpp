@@ -38,11 +38,11 @@ void Sampler::sample(bool acceptedStep) {
     double localAlphaDerivative = m_system->getWaveFunction()->computeAlphaDerivative(m_system->getParticles());
 
 
-    // m_localEnergy = localEnergy;
-    // m_cumulativeEnergy  += localEnergy;
-    // m_cumulativeEnergySquared += localEnergy*localEnergy;
+    m_localEnergy = localEnergy;
+    m_cumulativeEnergy  += localEnergy;
+    m_cumulativeEnergySquared += localEnergy*localEnergy;
     m_cumulativeAlphaDerivative += localAlphaDerivative;
-    // m_cumulativeLocalEnergyTimesAlphaDerivative += localEnergy*localAlphaDerivative;
+    m_cumulativeLocalEnergyTimesAlphaDerivative += localEnergy*localAlphaDerivative;
     m_stepNumber++;
 }
 

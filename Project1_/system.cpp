@@ -36,7 +36,7 @@ bool System::metropolisStep() {
 
     class WaveFunction *temp         = getWaveFunction();
 
-    double wave_function_old         = temp->evaluate(m_particles);
+    double wave_function_old         =  temp->evaluate(m_particles);
 
     vector<double> new_position;
 
@@ -90,6 +90,7 @@ void System::runMetropolisSteps(int numberOfMetropolisSteps) {
 
   
     clock_t start_time = clock();
+
 
     for (int i=0; i < numberOfMetropolisSteps; i++) {
         bool acceptedStep = metropolisStep();
@@ -189,7 +190,7 @@ bool System::importanceSamplingStep(double timestep)
 void System::runImportanceSamplingSteps(int numberOfImportanceSamplingSteps, double timestep)
 {
     m_particles                 = m_initialState->getParticles();
-    bool temp = importanceSamplingStep(timestep);
+    // bool temp = importanceSamplingStep(timestep);
     m_sampler                   = new Sampler(this);
     m_numberOfMetropolisSteps   = numberOfImportanceSamplingSteps;
     m_sampler->setNumberOfMetropolisSteps(numberOfImportanceSamplingSteps);
@@ -211,10 +212,10 @@ void System::runImportanceSamplingSteps(int numberOfImportanceSamplingSteps, dou
          */
         m_sampler->sample(acceptedStep);
         outfile << m_sampler->getLocalEnergy() << endl;
-        // if(i % 100 == 0)
-        // {
-        //     cout << i << endl;
-        // }
+        if(i % 100 == 0)
+        {
+            cout << i << endl;
+        }
     }
 
     time_t end_time = clock();
@@ -267,8 +268,8 @@ double System::runGradientDescent(double stepLength, double initialAlphaValue)
         
 
         double gradient = 2*(m_sampler->getEnergyTimesAlphaDerivative() - (m_sampler->getEnergy()*m_sampler->getAlphaDerivative()));
-        cout << stepLength*gradient << endl;
-        cout << current_alpha_value << endl;
+        cout << "Grad times step-length :   "<< stepLength*gradient << endl;
+        cout << "Current wf value       :   " << current_alpha_value << endl;
 
         m_waveFunction->setAlpha(current_alpha_value);
 
@@ -279,6 +280,56 @@ double System::runGradientDescent(double stepLength, double initialAlphaValue)
     cout << current_alpha_value << endl;
     return current_alpha_value;
 
+}
+
+void System::runComputeOneBodyDensity(int numberOfMetropolisSteps)
+{
+    m_particles                 = m_initialState->getParticles();
+    // m_sampler                   = new Sampler(this);
+    m_numberOfMetropolisSteps   = numberOfMetropolisSteps;
+    // m_sampler->setNumberOfMetropolisSteps(numberOfMetropolisSteps);
+
+    ofstream outfile;
+    outfile.open("InteractingOneBodyDensity_" + to_string(m_numberOfParticles) + ".txt");
+
+  
+    clock_t start_time = clock();
+
+
+    for (int i=0; i < numberOfMetropolisSteps; i++) {
+        bool acceptedStep = metropolisStep();
+
+        for(int i = 0; i < m_numberOfParticles; i++)
+        {
+            double norm = 0;
+            std::vector<double> particle_position = m_particles[i]->getPosition();
+
+            for(int dim = 0; dim < m_numberOfDimensions; dim++)
+            {
+                norm += particle_position[i]*particle_position[i];
+            }
+
+            norm = sqrt(norm);
+
+            outfile << norm << endl;
+
+
+        }
+
+        if( i % 1000 ==0)
+        {
+            cout << i << endl;
+        }
+
+    }
+
+    clock_t end_time = clock();
+
+    cout << "Time elapsed: " << ((float)(end_time - start_time))/CLOCKS_PER_SEC << " sec" << endl;
+
+    // outfile << "Time: " << ((float)(end_time - start_time))/CLOCKS_PER_SEC << endl;
+
+    outfile.close();
 }
 
 void System::setNumberOfParticles(int numberOfParticles) {
