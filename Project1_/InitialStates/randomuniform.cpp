@@ -49,8 +49,8 @@ void RandomUniform::setupInitialState() {
              */
             // double position = rand()/RAND_MAX;
             position.push_back(Normaldistribution2(gen2)*m_system->getStepLength());
-            cout << m_system->getStepLength() << endl;
-            // position.push_back((rand()/RAND_MAX) - 0.5);
+            // cout << m_system->getStepLength() << endl;
+            // position.push_back((2*((double)rand()/RAND_MAX)) - 1.);
             // position.push_back(i);
         }
 

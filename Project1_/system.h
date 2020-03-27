@@ -41,7 +41,7 @@ private:
     int                             m_numberOfParticles = 0;
     int                             m_numberOfDimensions = 0;
     int                             m_numberOfMetropolisSteps = 0;
-    int                             m_a = 0;
+    double                          m_a = 0;
     double                          m_beta = 1; 
     double                          m_gamma = 1;
     double                          m_equilibrationFraction = 0.0;

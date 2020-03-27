@@ -86,10 +86,13 @@ void System::runMetropolisSteps(int numberOfMetropolisSteps) {
     m_sampler->setNumberOfMetropolisSteps(numberOfMetropolisSteps);
 
     ofstream outfile;
-    outfile.open("interacting_metropolis_local_energy_values_a_" + to_string(getA()) + "num_particles_" + to_string(getNumberOfParticles()) + "num_dims_" + to_string(getNumberOfDimensions()) + "alpha_" + to_string(getWaveFunction()->getParameters()[0]) + ".txt"  );
+    outfile.open("Data/interacting_metropolis_local_energy_values_a_" + to_string(getA()) + "_num_particles_" + to_string(getNumberOfParticles()) + "_num_dims_" + to_string(getNumberOfDimensions()) + "_alpha_" + to_string(getWaveFunction()->getParameters()[0]) + ".txt"  );
 
   
     clock_t start_time = clock();
+
+    std::vector<double> samples;
+    samples.reserve(numberOfMetropolisSteps);
 
 
     for (int i=0; i < numberOfMetropolisSteps; i++) {
@@ -102,9 +105,10 @@ void System::runMetropolisSteps(int numberOfMetropolisSteps) {
          * are equilibration steps; m_equilibrationFraction.
          */
         m_sampler->sample(acceptedStep);
-        outfile << m_sampler->getLocalEnergy() << endl;
+        samples[i] = m_sampler->getLocalEnergy();
+        // outfile << m_sampler->getLocalEnergy() << endl;
 
-        if( i % 1000 ==0)
+        if( i % 100000 ==0)
         {
             cout << i << endl;
         }
@@ -112,6 +116,11 @@ void System::runMetropolisSteps(int numberOfMetropolisSteps) {
     }
 
     clock_t end_time = clock();
+
+    for(int i= 0; i < numberOfMetropolisSteps; i++)
+    {
+        outfile << samples[i] << endl;
+    }
 
 
     m_sampler->computeAverages();
@@ -140,13 +149,14 @@ bool System::importanceSamplingStep(double timestep)
 
     vector<double> new_position;
 
-    double prev_drift_force[m_numberOfParticles]; 
-    double new_drift_force[m_numberOfParticles];
-    double gradient[m_numberOfParticles];
+    double prev_drift_force[m_numberOfDimensions]; 
+    double new_drift_force[m_numberOfDimensions];
+    double prev_gradient[m_numberOfDimensions];
+    double new_gradient[m_numberOfDimensions];
 
-    temp->computeDerivative(gradient, m_particles, random_particle_number);
+    temp->computeDerivative(prev_gradient, m_particles, random_particle_number);
     
-    temp->computeDriftForce(prev_drift_force, gradient , random_particle_number);
+    temp->computeDriftForce(prev_drift_force, prev_gradient , random_particle_number);
 
     for(int i = 0; i < m_numberOfDimensions; i++)
     {
@@ -157,7 +167,9 @@ bool System::importanceSamplingStep(double timestep)
 
     m_particles[random_particle_number]->setPosition(new_position);
 
-    temp->computeDriftForce(new_drift_force, gradient, random_particle_number);
+    temp->computeDerivative(new_gradient, m_particles, random_particle_number);
+
+    temp->computeDriftForce(new_drift_force, new_gradient, random_particle_number);
 
     double wave_function_new = temp->evaluate(m_particles);
 
@@ -196,8 +208,10 @@ void System::runImportanceSamplingSteps(int numberOfImportanceSamplingSteps, dou
     m_sampler->setNumberOfMetropolisSteps(numberOfImportanceSamplingSteps);
 
     ofstream outfile;
-    outfile.open("importance_sampling_local_energy_values_a_" + to_string(getA()) + "num_particles_" + to_string(getNumberOfParticles()) + "num_dims_" + to_string(getNumberOfDimensions()) + "alpha_" + to_string(getWaveFunction()->getParameters()[0]) + ".txt" );
-
+    // outfile.open("importance_sampling_local_energy_values_a_" + to_string(getA()) + "num_particles_" + to_string(getNumberOfParticles()) + "num_dims_" + to_string(getNumberOfDimensions()) + "alpha_" + to_string(getWaveFunction()->getParameters()[0]) + ".txt" );
+    outfile.open("Data/non_interacting_importance_sampling_metropolis_local_energy_values_a_" + to_string(getA()) + "_num_particles_" + to_string(getNumberOfParticles()) + "_num_dims_" + to_string(getNumberOfDimensions()) + "_alpha_" + to_string(getWaveFunction()->getParameters()[0]) + ".txt"  );
+    std::vector<double> samples;
+    samples.reserve(numberOfImportanceSamplingSteps);
 
     time_t start_time = clock();
 
@@ -211,8 +225,9 @@ void System::runImportanceSamplingSteps(int numberOfImportanceSamplingSteps, dou
          * are equilibration steps; m_equilibrationFraction.
          */
         m_sampler->sample(acceptedStep);
-        outfile << m_sampler->getLocalEnergy() << endl;
-        if(i % 100 == 0)
+        samples[i] = m_sampler->getLocalEnergy();
+        // outfile << m_sampler->getLocalEnergy() << endl;
+        if(i % 100000 == 0)
         {
             cout << i << endl;
         }
@@ -220,7 +235,12 @@ void System::runImportanceSamplingSteps(int numberOfImportanceSamplingSteps, dou
 
     time_t end_time = clock();
 
-    outfile << "Time elapsed: " << ((float)(end_time - start_time))/CLOCKS_PER_SEC << " sec" << endl;
+    for(int i = 0; i < numberOfImportanceSamplingSteps; i++)
+    {
+        outfile << samples[i] << endl;
+    }
+
+    outfile << "Time: " << ((float)(end_time - start_time))/CLOCKS_PER_SEC << endl;
 
     outfile.close();
     m_sampler->computeAverages();
@@ -236,13 +256,15 @@ double System::runGradientDescent(double stepLength, double initialAlphaValue)
      * 
      */
     double initial_value        = initialAlphaValue;
-    int max_number_of_steps     = 10000;
+    int max_number_of_steps     = 100;
     double tol                  = 0.001;
-    int numberOfMetropolisSteps = 1000;
+    int numberOfMetropolisSteps = 10000;
 
     double current_alpha_value  = initial_value;
+    double gradient             = 1;
 
-    for(int i = 0; i < max_number_of_steps; i++)
+    // for(int i = 0; i < max_number_of_steps; i++)
+    while(abs(gradient) > tol)
     {
         m_particles                 = m_initialState->getParticles();
         m_sampler                   = new Sampler(this);
@@ -252,8 +274,7 @@ double System::runGradientDescent(double stepLength, double initialAlphaValue)
     
 
         for (int i=0; i < numberOfMetropolisSteps; i++) {
-            bool acceptedStep = metropolisStep();
-
+            bool acceptedStep = metropolisStep(); 
             /* Here you should sample the energy (and maybe other things using
             * the m_sampler instance of the Sampler class. Make sure, though,
             * to only begin sampling after you have let the system equilibrate
@@ -267,9 +288,9 @@ double System::runGradientDescent(double stepLength, double initialAlphaValue)
 
         
 
-        double gradient = 2*(m_sampler->getEnergyTimesAlphaDerivative() - (m_sampler->getEnergy()*m_sampler->getAlphaDerivative()));
+        gradient = 2*(m_sampler->getEnergyTimesAlphaDerivative() - (m_sampler->getEnergy()*m_sampler->getAlphaDerivative()));
         cout << "Grad times step-length :   "<< stepLength*gradient << endl;
-        cout << "Current wf value       :   " << current_alpha_value << endl;
+        cout << "Current alpha value       :   " << current_alpha_value << endl;
 
         m_waveFunction->setAlpha(current_alpha_value);
 
@@ -290,7 +311,7 @@ void System::runComputeOneBodyDensity(int numberOfMetropolisSteps)
     // m_sampler->setNumberOfMetropolisSteps(numberOfMetropolisSteps);
 
     ofstream outfile;
-    outfile.open("InteractingOneBodyDensity_" + to_string(m_numberOfParticles) + ".txt");
+    outfile.open("NonInteractingOneBodyDensity_" + to_string(m_numberOfParticles) + "_2.txt");
 
   
     clock_t start_time = clock();
@@ -298,15 +319,17 @@ void System::runComputeOneBodyDensity(int numberOfMetropolisSteps)
 
     for (int i=0; i < numberOfMetropolisSteps; i++) {
         bool acceptedStep = metropolisStep();
+        // bool acceptedStep = importanceSamplingStep(0.3);
 
-        for(int i = 0; i < m_numberOfParticles; i++)
+        for(int j = 0; j < m_numberOfParticles; j++)
         {
             double norm = 0;
-            std::vector<double> particle_position = m_particles[i]->getPosition();
+            std::vector<double> particle_position = m_particles[j]->getPosition();
 
             for(int dim = 0; dim < m_numberOfDimensions; dim++)
             {
-                norm += particle_position[i]*particle_position[i];
+                norm += particle_position[dim]*particle_position[dim];
+                // cout << norm << endl;
             }
 
             norm = sqrt(norm);
