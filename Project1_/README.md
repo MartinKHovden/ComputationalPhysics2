@@ -7,9 +7,6 @@ In this project we study particles trapped in different potentials. We start by 
 To run the desired simulation, you can set up the system in main.cpp. When the desired system is initialized you can compile the code using
 `./compile_project` and then run the simluations using `./vmc`.  
 
-#### Cleaning the directory
-Run `make clean` in the top-directory to remove the executable `vmc` and the `build`-directory.
-
 ## Testing
 To test the code, use: 
 
