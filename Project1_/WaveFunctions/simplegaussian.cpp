@@ -18,7 +18,15 @@ SimpleGaussian::SimpleGaussian(class System* system, double alpha) :
 }
 
 double SimpleGaussian::evaluate(std::vector<class Particle*> particles) {
-    /* Function for evaluating the wave function value. 
+    /* Function for evaluating the wave function value.
+     * 
+     * Params:
+     * ------
+     * particles: vector that contains each particle in the system.
+     * 
+     * Returns:
+     * --------
+     * g_product: The wave function value for the given system.  
      */
 
     double exp_argument = 0;
@@ -47,6 +55,13 @@ double SimpleGaussian::evaluate(std::vector<class Particle*> particles) {
 double SimpleGaussian::computeDoubleDerivative(std::vector<class Particle*> particles) {
     /* Computes the double derivative of the wavefunction with respect to the particles. 
      * This quantity is needed to compute the energy
+     * 
+     * Params:
+     * -------
+     * particles: Vector that contains the particles in the system. 
+     * 
+     * Returns: 
+     * Returns the laplacian of the wave function. 
      */
 
     int num_part = m_system->getNumberOfParticles();
@@ -83,6 +98,12 @@ void SimpleGaussian::computeDerivative(double *derivative, std::vector<class Par
 {
     /* Computes the derivative of the wavefunction with respect to one of the particles to be used 
      * in importance sampling. 
+     * 
+     * Params:
+     * -------
+     * *derivative: pointer to a vector that will contain the gradient of the wavefunction. 
+     * particles: vector of particles in system. 
+     * particle_number: Computes the gradient with respect to this particle. 
      */
 
     class Particle particle = *particles[particle_number];
@@ -103,6 +124,12 @@ void SimpleGaussian::computeDriftForce(double *drift_force, double * gradient, i
 {
     /* Computes the driftforce of the wavefunction with respect to one particle to be used in importance
      * sampling. 
+     * 
+     * Params:
+     * -------
+     * drift_force: pointer to a vector that will contain the drift force. 
+     * gradient: pointer to a vector with the gradient in it. 
+     * particle_number: Computes the drift force with respect to this particle. 
      */ 
 
     int number_of_dimensions = m_system->getNumberOfDimensions();
