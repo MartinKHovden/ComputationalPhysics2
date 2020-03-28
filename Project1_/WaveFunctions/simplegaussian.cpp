@@ -148,5 +148,31 @@ void SimpleGaussian::computeDriftForce(double *drift_force, double * gradient, i
 
 double SimpleGaussian::computeAlphaDerivative(std::vector<class Particle*> particles)
 {
+    int num_particles = m_system->getNumberOfParticles();
+    int num_dims = m_system->getNumberOfDimensions();
+
+    double beta = m_system->getBeta();
+
+    double derivative = 0;
+
+    for(int i = 0; i < num_particles; i++)
+    {
+
+        std::vector<double> particle_coordinates = particles[i]->getPosition();
+
+        for(int dim = 0; dim < num_dims; dim++)
+        {
+            if(dim == 2)
+            {
+                derivative += particle_coordinates[dim]*particle_coordinates[dim];
+            }
+            else 
+            {
+                derivative += particle_coordinates[dim]*particle_coordinates[dim];
+            }
+        }
+    }
+
+    return -derivative;
 
 }

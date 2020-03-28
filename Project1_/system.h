@@ -18,7 +18,7 @@ public:
     void setHamiltonian             (class Hamiltonian* hamiltonian); 
     void setWaveFunction            (class WaveFunction* waveFunction);
     void setInitialState            (class InitialState* initialState);
-    double runGradientDescent       (double stepLength, double initialAlphaValue);
+    double runGradientDescent       (double stepLength, double initialAlphaValue, int numberOfGDSteps, int numMetropolisSteps, double tolerance);
     void runComputeOneBodyDensity   (int numberOfMetropolisSteps);
     class WaveFunction*             getWaveFunction()   { return m_waveFunction; }
     class Hamiltonian*              getHamiltonian()    { return m_hamiltonian; }

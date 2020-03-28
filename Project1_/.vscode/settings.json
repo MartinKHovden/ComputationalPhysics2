@@ -42,7 +42,22 @@
         "functional": "cpp",
         "iterator": "cpp",
         "numeric": "cpp",
-        "random": "cpp"
+        "random": "cpp",
+        "cstring": "cpp",
+        "ctime": "cpp",
+        "bitset": "cpp",
+        "chrono": "cpp",
+        "condition_variable": "cpp",
+        "map": "cpp",
+        "ratio": "cpp",
+        "regex": "cpp",
+        "set": "cpp",
+        "future": "cpp",
+        "iomanip": "cpp",
+        "mutex": "cpp",
+        "thread": "cpp",
+        "cinttypes": "cpp",
+        "variant": "cpp"
     },
     "python.pythonPath": "/usr/bin/python3"
 }

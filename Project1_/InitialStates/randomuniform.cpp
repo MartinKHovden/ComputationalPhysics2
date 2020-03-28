@@ -1,7 +1,7 @@
 #include "randomuniform.h"
 #include <iostream>
 #include <cassert>
-#include "Math/random.h"
+// #include "Math/random.h"
 #include "../particle.h"
 #include "../system.h"
 #include <random>
@@ -25,7 +25,7 @@ RandomUniform::RandomUniform(System*    system,
      * initialization of the system; this includes determining the number of
      * particles and the number of dimensions used. To make sure everything
      * works as intended, this information is passed to the system here.
-     */
+     */ 
     m_system->setNumberOfDimensions(numberOfDimensions);
     m_system->setNumberOfParticles(numberOfParticles);
     setupInitialState();

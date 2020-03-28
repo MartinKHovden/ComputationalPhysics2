@@ -19,7 +19,7 @@ using namespace std;
  
 int main() {
     int numberOfDimensions  = 3;
-    int numberOfParticles   = 100;
+    int numberOfParticles   = 10;
     int numberOfSteps       = (int) pow(2.0, 19.0);
     double omega            = 1.0;          // Oscillator frequency.
     double alpha            = 0.4999;          // Variational parameter.
@@ -37,14 +37,14 @@ int main() {
 
     // CHOOSE HAMILTONIAN:
 
-    system->setHamiltonian              (new HarmonicOscillator(system, omega)); double a = 0.0;
-    // system->setHamiltonian              (new HarmonicOscillatorInteracting(system, omega)); double a = 0.0043;
+    // system->setHamiltonian              (new HarmonicOscillator(system, omega)); double a = 0.0;
+    system->setHamiltonian              (new HarmonicOscillatorInteracting(system, omega)); double a = 0.0043;
 
     // CHOOSE WAVEFUNCTION: 
 
-    system->setWaveFunction             (new SimpleGaussian(system, alpha)); 
+    // system->setWaveFunction             (new SimpleGaussian(system, alpha)); 
     // system->setWaveFunction             (new SimpleGaussianNumerical(system, alpha));
-    // system->setWaveFunction             (new EllipticalGaussianAnalytical(system, alpha));
+    system->setWaveFunction             (new EllipticalGaussianAnalytical(system, alpha));
 
     // SET PARAMS:
 
@@ -60,8 +60,8 @@ int main() {
 
     // system->runMetropolisSteps          (numberOfSteps);
     // system->runImportanceSamplingSteps  (numberOfSteps, timestep);
-    // system->runGradientDescent          (0.0000001, 0.46);
-    system->runComputeOneBodyDensity       (1e6);
+    system->runGradientDescent          (0.000001, 0.5,100, pow(2, 19)/10., 0.001);
+    // system->runComputeOneBodyDensity       (1e6);
 
     return 0;
 }

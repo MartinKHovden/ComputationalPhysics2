@@ -13,6 +13,7 @@
 #include <random>
 #include <fstream> 
 #include <time.h>
+#include "InitialStates/randomuniform.h"
 
 using namespace std;
 
@@ -22,12 +23,17 @@ std::normal_distribution<double> Normaldistribution(0.0, 1.0);
 std::uniform_real_distribution<double> UniformGenerator(0.0, 1.0);
 
 bool System::metropolisStep() {
-    /* Perform the actual Metropolis step: Choose a particle at random and
-     * change it's position by a random amount, and check if the step is
-     * accepted by the Metropolis test (compare the wave function evaluated
-     * at this new position with the one at the old position).
+    /* Function to perform on step in the Metropolis algorithm. Proposes a new 
+     * position, calculates the probability ratio and then accepts/rejects the 
+     * proposed step. The new position is propsed for one random particle. 
+     * 
+     * The function updates the system variables while running. 
+     * 
+     * Returns:
+     * A boolean variable that indicates wheter the new step is accepted or rejected.
      */
 
+    // Chooses a random particle number to update the position. 
     int random_particle_number       = rand() % m_particles.size(); 
     
     class Particle random_particle   = *m_particles[random_particle_number];
@@ -36,10 +42,12 @@ bool System::metropolisStep() {
 
     class WaveFunction *temp         = getWaveFunction();
 
+    // Evaluates the current wavefunction value. 
     double wave_function_old         =  temp->evaluate(m_particles);
 
     vector<double> new_position;
 
+    // Proposes a new position for the randommly chosen particle. 
     for(int i = 0; i < old_position.size(); i++)
     {
         int temp_ran = rand() % 10;
@@ -54,25 +62,22 @@ bool System::metropolisStep() {
         }
     }
 
-
+    // Sets the chosen particles position to the proposed position and calculates the new wave function value. 
     m_particles[random_particle_number]->setPosition(new_position);
 
     double wave_function_new = temp->evaluate(m_particles);
 
-    // cout << "new          : " << wave_function_new << "      old: " << wave_function_old << endl;
-    // cout << "position     : " << m_particles[random_particle_number]->getPosition()[0] << endl;
-
     double prob_limit = (double) rand() / RAND_MAX;
 
-    // cout << prob_limit << endl;
-    // cout << (wave_function_new*wave_function_new)/(wave_function_old*wave_function_old) << endl;
-
+    // Does the Metropolis test by calculating the ratio between the old and new wave function value. 
     if(prob_limit < (wave_function_new*wave_function_new)/(wave_function_old*wave_function_old))
     {
+        // If accepted, keeps the new position. 
         return true;
     }
     else
     {
+        // If rejected, sets the position back to the old one. 
         m_particles[random_particle_number] -> setPosition(old_position);
         return false;
     }
@@ -80,33 +85,39 @@ bool System::metropolisStep() {
 }
 
 void System::runMetropolisSteps(int numberOfMetropolisSteps) {
+    /* Function for running the Metropolis algorithm. Calls the metropolisStep function
+     * multiple times and calculates the final Monte Carlo estimation of the ground state 
+     * energy.
+     * 
+     * Params:
+     * numberOfMetropolisSteps: int, Number of iterations in the Metropolis algorithm. 
+     */
+
     m_particles                 = m_initialState->getParticles();
     m_sampler                   = new Sampler(this);
     m_numberOfMetropolisSteps   = numberOfMetropolisSteps;
     m_sampler->setNumberOfMetropolisSteps(numberOfMetropolisSteps);
 
     ofstream outfile;
-    outfile.open("Data/interacting_metropolis_local_energy_values_a_" + to_string(getA()) + "_num_particles_" + to_string(getNumberOfParticles()) + "_num_dims_" + to_string(getNumberOfDimensions()) + "_alpha_" + to_string(getWaveFunction()->getParameters()[0]) + ".txt"  );
+    outfile.open("Data/interacting_metropolis_local_energy_values_a_" + to_string(getA()) + 
+                        "_num_particles_" + to_string(getNumberOfParticles()) + "_num_dims_" + 
+                                        to_string(getNumberOfDimensions()) + "_alpha_" + 
+                                                to_string(getWaveFunction()->getParameters()[0]) + ".txt"  );
 
   
-    clock_t start_time = clock();
+    clock_t start_time = clock(); 
 
+    // Sets up a vector to record the local energies for each iteration of the Metropolis algo. 
     std::vector<double> samples;
     samples.reserve(numberOfMetropolisSteps);
 
-
+    // Does the Metropolis steps "numberOfMetropolisSteps" times and samples the energy for each step. 
     for (int i=0; i < numberOfMetropolisSteps; i++) {
         bool acceptedStep = metropolisStep();
 
-        /* Here you should sample the energy (and maybe other things using
-         * the m_sampler instance of the Sampler class. Make sure, though,
-         * to only begin sampling after you have let the system equilibrate
-         * for a while. You may handle this using the fraction of steps which
-         * are equilibration steps; m_equilibrationFraction.
-         */
         m_sampler->sample(acceptedStep);
+
         samples[i] = m_sampler->getLocalEnergy();
-        // outfile << m_sampler->getLocalEnergy() << endl;
 
         if( i % 100000 ==0)
         {
@@ -117,12 +128,14 @@ void System::runMetropolisSteps(int numberOfMetropolisSteps) {
 
     clock_t end_time = clock();
 
+    // Writes the recorded samples to file. 
     for(int i= 0; i < numberOfMetropolisSteps; i++)
     {
         outfile << samples[i] << endl;
     }
 
 
+    // Computes the values and writes to terminal. 
     m_sampler->computeAverages();
     m_sampler->printOutputToTerminal();
 
@@ -136,6 +149,19 @@ void System::runMetropolisSteps(int numberOfMetropolisSteps) {
 
 bool System::importanceSamplingStep(double timestep)
 {
+    /* Function to perform on step in the Metropolis Importance Sampling algorithm. 
+     * Proposes a new position, calculates the probability ratio and then accepts/rejects the 
+     * proposed step. The new position is propsed for one random particle. 
+     * 
+     * The function updates the system variables while running. 
+     * 
+     * Params:
+     * double timestep: The timestep in the position update. 
+     * 
+     * Returns:
+     * A boolean variable that indicates wheter the new step is accepted or rejected.
+     */
+
     int random_particle_number       = rand() % m_particles.size(); 
     
     class Particle random_particle   = *m_particles[random_particle_number];
@@ -149,6 +175,7 @@ bool System::importanceSamplingStep(double timestep)
 
     vector<double> new_position;
 
+    //Sets up containers for the drift-forces and the gradients. 
     double prev_drift_force[m_numberOfDimensions]; 
     double new_drift_force[m_numberOfDimensions];
     double prev_gradient[m_numberOfDimensions];
@@ -186,7 +213,7 @@ bool System::importanceSamplingStep(double timestep)
 
     double greens_function = exp(greens_function_argument);
 
-    double prob_limit = UniformGenerator(gen); //rand()/RAND_MAX;
+    double prob_limit = UniformGenerator(gen); 
 
     if(prob_limit <= greens_function*(wave_function_new*wave_function_new)/(wave_function_old*wave_function_old))
     {
@@ -249,52 +276,64 @@ void System::runImportanceSamplingSteps(int numberOfImportanceSamplingSteps, dou
     cout << "Time elapsed: " << ((float)(end_time - start_time))/CLOCKS_PER_SEC << " sec" << endl;
 }
 
-double System::runGradientDescent(double stepLength, double initialAlphaValue)
+double System::runGradientDescent(double stepLength, double initialAlphaValue, int numberOfGDSteps, int numMetropolisSteps, double tolerance)
 {
-    /* Returns the optimal alpha value for the system. 
+    /* Returns the optimal alpha value for the given system. 
      *
      * 
      */
-    double initial_value        = initialAlphaValue;
-    int max_number_of_steps     = 100;
-    double tol                  = 0.001;
-    int numberOfMetropolisSteps = 10000;
+    int max_number_of_steps     = numberOfGDSteps;
+    double tol                  = tolerance;
+    int numberOfMetropolisSteps = numMetropolisSteps;
 
-    double current_alpha_value  = initial_value;
-    double gradient             = 1;
+    double current_alpha_value  = initialAlphaValue;
+    double gradient = 1;
 
-    // for(int i = 0; i < max_number_of_steps; i++)
-    while(abs(gradient) > tol)
+    int step = 0;
+
+    while(step < max_number_of_steps)
     {
         m_particles                 = m_initialState->getParticles();
         m_sampler                   = new Sampler(this);
         m_numberOfMetropolisSteps   = numberOfMetropolisSteps;
         m_sampler->setNumberOfMetropolisSteps(numberOfMetropolisSteps);
-
     
 
         for (int i=0; i < numberOfMetropolisSteps; i++) {
-            bool acceptedStep = metropolisStep(); 
-            /* Here you should sample the energy (and maybe other things using
-            * the m_sampler instance of the Sampler class. Make sure, though,
-            * to only begin sampling after you have let the system equilibrate
-            * for a while. You may handle this using the fraction of steps which
-            * are equilibration steps; m_equilibrationFraction.
-            */
+            // bool acceptedStep = metropolisStep(); 
+            bool acceptedStep = importanceSamplingStep(0.3);
             m_sampler->sample(acceptedStep);
         }
 
         m_sampler->computeAverages();
 
+
+
+
+
         
 
         gradient = 2*(m_sampler->getEnergyTimesAlphaDerivative() - (m_sampler->getEnergy()*m_sampler->getAlphaDerivative()));
+        cout << "EnergyTimesAlphaDerivative: " << m_sampler->getEnergyTimesAlphaDerivative() << endl;
+        cout << "Energy: " << m_sampler->getEnergy() << endl;
+        cout << "Alpha Derivative" << m_sampler->getAlphaDerivative() << endl;
+        cout <<"Step-length: " << stepLength << endl;
+        cout << "Gradient: " << gradient << endl; 
         cout << "Grad times step-length :   "<< stepLength*gradient << endl;
         cout << "Current alpha value       :   " << current_alpha_value << endl;
 
         m_waveFunction->setAlpha(current_alpha_value);
 
         current_alpha_value = current_alpha_value - stepLength*gradient;
+
+        setInitialState(new RandomUniform(this, m_numberOfDimensions, m_numberOfParticles));
+
+        if(abs(gradient) < tol && step > 10)
+        {
+            break;
+        }
+
+        step++;
 
     }
 

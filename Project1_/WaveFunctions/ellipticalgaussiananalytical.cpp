@@ -311,5 +311,5 @@ double EllipticalGaussianAnalytical::computeAlphaDerivative(std::vector<Particle
         }
     }
 
-    return -2*derivative;
+    return -derivative;
 }
