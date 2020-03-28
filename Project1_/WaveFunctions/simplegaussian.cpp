@@ -77,9 +77,6 @@ double SimpleGaussian::computeDoubleDerivative(std::vector<class Particle*> part
     kinetic_energy += 4*alpha*alpha*square_sum;
 
     return kinetic_energy;
-
-
-
 }
 
 void SimpleGaussian::computeDerivative(double *derivative, std::vector<class Particle*> particles, int particle_number)
