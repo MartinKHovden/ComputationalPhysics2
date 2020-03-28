@@ -17,6 +17,10 @@
 #include "../Math/random.h"
 #include <math.h>
 
+/**
+ * Test library using the catch2 testing library. 
+ */
+
 
 class System* setUpSystemSimpleGaussian(double alph, int numParticles, int numDims)
 {
