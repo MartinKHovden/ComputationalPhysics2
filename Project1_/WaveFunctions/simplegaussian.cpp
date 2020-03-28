@@ -18,14 +18,9 @@ SimpleGaussian::SimpleGaussian(class System* system, double alpha) :
 }
 
 double SimpleGaussian::evaluate(std::vector<class Particle*> particles) {
-    /* You need to implement a Gaussian wave function here. The positions of
-     * the particles are accessible through the particle[i].getPosition()
-     * function.
-     *
-     * For the actual expression, use exp(-alpha * r^2), with alpha being the
-     * (only) variational parameter.
+    /* Function for evaluating the wave function value. 
      */
-    
+
     double exp_argument = 0;
 
     // Computes the argument of the exponential in the wave function. 
