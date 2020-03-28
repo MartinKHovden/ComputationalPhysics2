@@ -9,6 +9,7 @@ To run the desired simulation, you can set up the system in main.cpp. When the d
 
 ## Testing
 To test the code, use: 
+`g++  TEST.cpp  ../sampler.cpp ../system.cpp ../Hamiltonians/*.cpp ../InitialStates/*.cpp ../Math/*.cpp ../Wavefunctions/*.cpp ../particle.cpp  -o test` and then run the tests with `./test`.   
 
 ## Benchmarks
 In the folders /Data and /Plots various results are presented. In the /Data folder you will find local energies from various runs of the simluations. The files are named according to the simulated systems. In the /Plots folder you will find plots from some of the simluations, also named according to the system simulated. 
