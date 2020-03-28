@@ -2,7 +2,7 @@
 Repository for projects in FYS441: Computational Physics 2. 
 
 ## Project 1
-Using variational Monte Carlo methods for calculating the ground state energies of ... 
+Using variational Monte Carlo methods for calculating the ground state energies of a hard spehere Bose gas. 
 
 ## Project 2 
  
