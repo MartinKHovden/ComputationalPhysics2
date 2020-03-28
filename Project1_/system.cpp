@@ -15,6 +15,10 @@
 #include <time.h>
 #include "InitialStates/randomuniform.h"
 
+/**
+ * This file contains the various simulation methods. 
+ */
+
 using namespace std;
 
 std::random_device rd;
@@ -215,12 +219,15 @@ bool System::importanceSamplingStep(double timestep)
 
     double prob_limit = UniformGenerator(gen); 
 
+    //Acceptance/Rejection step. 
     if(prob_limit <= greens_function*(wave_function_new*wave_function_new)/(wave_function_old*wave_function_old))
     {
+        //If true, keep the new position.
         return true;
     }
     else
     {
+        //Else, continue with the previous position. 
         m_particles[random_particle_number]->setPosition(old_position);
         return false;
     }
@@ -228,32 +235,33 @@ bool System::importanceSamplingStep(double timestep)
 
 void System::runImportanceSamplingSteps(int numberOfImportanceSamplingSteps, double timestep)
 {
+    /* Function for running the Importance Sampling Metropolis algorithm. Calls the importanceSamplingStep function
+     * multiple times and calculates the final Monte Carlo estimation of the ground state 
+     * energy.
+     * 
+     * Params:
+     * numberOfMImportanceSamplingSteps: int, Number of iterations in the Metropolis algorithm. 
+     */
     m_particles                 = m_initialState->getParticles();
-    // bool temp = importanceSamplingStep(timestep);
     m_sampler                   = new Sampler(this);
     m_numberOfMetropolisSteps   = numberOfImportanceSamplingSteps;
     m_sampler->setNumberOfMetropolisSteps(numberOfImportanceSamplingSteps);
 
     ofstream outfile;
-    // outfile.open("importance_sampling_local_energy_values_a_" + to_string(getA()) + "num_particles_" + to_string(getNumberOfParticles()) + "num_dims_" + to_string(getNumberOfDimensions()) + "alpha_" + to_string(getWaveFunction()->getParameters()[0]) + ".txt" );
     outfile.open("Data/non_interacting_importance_sampling_metropolis_local_energy_values_a_" + to_string(getA()) + "_num_particles_" + to_string(getNumberOfParticles()) + "_num_dims_" + to_string(getNumberOfDimensions()) + "_alpha_" + to_string(getWaveFunction()->getParameters()[0]) + ".txt"  );
+    
     std::vector<double> samples;
     samples.reserve(numberOfImportanceSamplingSteps);
 
     time_t start_time = clock();
 
+    // Run the importance sampling steps multiple times. 
     for (int i=0; i < numberOfImportanceSamplingSteps; i++) {
         bool acceptedStep = importanceSamplingStep(timestep);
 
-        /* Here you should sample the energy (and maybe other things using
-         * the m_sampler instance of the Sampler class. Make sure, though,
-         * to only begin sampling after you have let the system equilibrate
-         * for a while. You may handle this using the fraction of steps which
-         * are equilibration steps; m_equilibrationFraction.
-         */
         m_sampler->sample(acceptedStep);
         samples[i] = m_sampler->getLocalEnergy();
-        // outfile << m_sampler->getLocalEnergy() << endl;
+
         if(i % 100000 == 0)
         {
             cout << i << endl;
@@ -262,6 +270,7 @@ void System::runImportanceSamplingSteps(int numberOfImportanceSamplingSteps, dou
 
     time_t end_time = clock();
 
+    // Save the samples to file
     for(int i = 0; i < numberOfImportanceSamplingSteps; i++)
     {
         outfile << samples[i] << endl;
@@ -278,9 +287,20 @@ void System::runImportanceSamplingSteps(int numberOfImportanceSamplingSteps, dou
 
 double System::runGradientDescent(double stepLength, double initialAlphaValue, int numberOfGDSteps, int numMetropolisSteps, double tolerance)
 {
-    /* Returns the optimal alpha value for the given system. 
-     *
+    /* Function for running the Gradient descent algorithm 
+     * and returns the optimal alpha value for the given system.
      * 
+     * Params:
+     * ------
+     * double stepLength: the step-length for updating the alpha value for each iteration. 
+     * double initialAlphaValue: the initial guess for the alpha value. 
+     * int numberOfGDSteps: maximum number of iterations.
+     * int numMetropolisSteps: number of steps to run the Metropolis algorithm for each iteration in the GD algorithm. 
+     * double tolerance: Optimal search stops when the gradient is smaller than tolerance. 
+     * 
+     * Returns:
+     * -------
+     * double current_alpha_value: The final estimate of the optimal alpha value.  
      */
     int max_number_of_steps     = numberOfGDSteps;
     double tol                  = tolerance;
@@ -344,31 +364,38 @@ double System::runGradientDescent(double stepLength, double initialAlphaValue, i
 
 void System::runComputeOneBodyDensity(int numberOfMetropolisSteps)
 {
+    /**
+     * Function for sampling the distance from the origo to each point
+     * in each step of the metropolis algorithm. The values are then used
+     * to make a probability density plot of the one-body position for 
+     * a random particle. 
+     * 
+     * Params:
+     * int numberOfMetropolisSteps.
+     * 
+     */
     m_particles                 = m_initialState->getParticles();
-    // m_sampler                   = new Sampler(this);
     m_numberOfMetropolisSteps   = numberOfMetropolisSteps;
-    // m_sampler->setNumberOfMetropolisSteps(numberOfMetropolisSteps);
 
     ofstream outfile;
     outfile.open("NonInteractingOneBodyDensity_" + to_string(m_numberOfParticles) + "_2.txt");
 
-  
     clock_t start_time = clock();
 
-
+    // Runs the metropolis step for numberOfMetropolisSteps iterations. 
     for (int i=0; i < numberOfMetropolisSteps; i++) {
         bool acceptedStep = metropolisStep();
-        // bool acceptedStep = importanceSamplingStep(0.3);
 
+        //For each step of the Metorpolis algo, all distances are recorded to file. 
         for(int j = 0; j < m_numberOfParticles; j++)
         {
             double norm = 0;
             std::vector<double> particle_position = m_particles[j]->getPosition();
 
+            //Calculates the norm of the position vectors for all particles. 
             for(int dim = 0; dim < m_numberOfDimensions; dim++)
             {
                 norm += particle_position[dim]*particle_position[dim];
-                // cout << norm << endl;
             }
 
             norm = sqrt(norm);
@@ -388,8 +415,6 @@ void System::runComputeOneBodyDensity(int numberOfMetropolisSteps)
     clock_t end_time = clock();
 
     cout << "Time elapsed: " << ((float)(end_time - start_time))/CLOCKS_PER_SEC << " sec" << endl;
-
-    // outfile << "Time: " << ((float)(end_time - start_time))/CLOCKS_PER_SEC << endl;
 
     outfile.close();
 }

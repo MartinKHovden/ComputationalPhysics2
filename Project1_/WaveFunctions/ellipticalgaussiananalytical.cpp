@@ -20,13 +20,19 @@ EllipticalGaussianAnalytical::EllipticalGaussianAnalytical(class System* system,
 
 double EllipticalGaussianAnalytical::evaluate(std::vector<class Particle*> particles)
 {
+    /* Function for evaluating the wave function value. 
+     */
+
     double return_value = evaluate_non_interacting_part(particles)*evaluate_correlation_part(particles);
-    // cout << "WaveFunctionVal = " << return_value << endl;
+
     return return_value;
 }
 
 double EllipticalGaussianAnalytical::evaluate_non_interacting_part(std::vector<class Particle*> particles)
 {
+    /* Function for evaluating the gaussian part of the wave function. 
+     */
+
     double exp_argument = 0;
 
     double beta = m_system->getBeta();
@@ -52,6 +58,7 @@ double EllipticalGaussianAnalytical::evaluate_non_interacting_part(std::vector<c
 
         exp_argument += temp;
     }
+
     double alpha = m_parameters[0];
     double g_product = exp(-alpha*exp_argument);
 
@@ -61,6 +68,9 @@ double EllipticalGaussianAnalytical::evaluate_non_interacting_part(std::vector<c
 
 double EllipticalGaussianAnalytical::evaluate_correlation_part(std::vector<class Particle*> particles)
 {
+    /* Function for evaluating the Jastrow factor (correlation part). 
+     */
+
     double num_particles = m_system->getNumberOfParticles();
     double a = m_system->getA();
 
@@ -92,6 +102,9 @@ double EllipticalGaussianAnalytical::evaluate_correlation_part(std::vector<class
 
 double EllipticalGaussianAnalytical::calculate_distance(std::vector<double> r1_position, std::vector<double> r2_position)
 {
+    /* Function for calcualting the distance between two particles. 
+     */ 
+
     double temp = 0;
 
     double num_dims = m_system->getNumberOfDimensions();
@@ -234,7 +247,6 @@ double EllipticalGaussianAnalytical::computeDoubleDerivative(std::vector<class P
 void EllipticalGaussianAnalytical::computeDerivative(double *derivative, std::vector<class Particle*> particles, int particle_number)
 {
     /* Computes the derivative of the wavefunction with respect to particle k. 
-     * 
      */
 
     std::vector<double> particle_k_coordinates = particles[particle_number]->getPosition();

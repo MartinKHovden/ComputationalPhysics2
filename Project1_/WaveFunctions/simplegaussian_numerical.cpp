@@ -18,15 +18,12 @@ SimpleGaussianNumerical::SimpleGaussianNumerical(class System* system, double al
 }
 
 double SimpleGaussianNumerical::evaluate(std::vector<class Particle*> particles) {
-    /* You need to implement a Gaussian wave function here. The positions of
-     * the particles are accessible through the particle[i].getPosition()
-     * function.
-     *
-     * For the actual expression, use exp(-alpha * r^2), with alpha being the
-     * (only) variational parameter.
+    /* Function for evaluating the wave function value. 
      */
+
     double exp_argument = 0;
 
+    // Computes the argument of the exponential in the wave function. 
     for(int i = 0; i < particles.size(); i++)
     {
         double temp = 0;
@@ -41,29 +38,25 @@ double SimpleGaussianNumerical::evaluate(std::vector<class Particle*> particles)
 
         exp_argument += temp;
     }
+    
     double alpha = m_parameters[0];
     double g_product = exp(-alpha*exp_argument);
+
     return g_product;
 }
 
 double SimpleGaussianNumerical::computeDoubleDerivative(std::vector<class Particle*> particles) {
-    /* All wave functions need to implement this function, so you need to
-     * find the double derivative analytically. Note that by double derivative,
-     * we actually mean the sum of the Laplacians with respect to the
-     * coordinates of each particle.
-     *
-     * This quantity is needed to compute the (local) energy (consider the
-     * Schrödinger equation to see how the two are related).
+    /* Computes the Laplacian of the wavefunction numerically. 
+     * This quantity is needed to compute the (local) energy.
      */
 
-    // int num_particles = particles.size();
     int num_particles = m_system->getNumberOfParticles();
 
     double double_derivative = 0;
 
     double wavefunction_value = evaluate(particles);
 
-    double h = 0.001;
+    double h = 0.001;  //Step-length in the numerical derivative.
     double alpha = m_parameters[0];
 
     for(int i = 0; i < num_particles; i++)
@@ -75,47 +68,29 @@ double SimpleGaussianNumerical::computeDoubleDerivative(std::vector<class Partic
         vector<double> particle_coordinates_plus_h = particle_coordinates;
         vector<double> particle_coordinates_minus_h = particle_coordinates;
 
-
-        // for(int j = 0; j < particle_coordinates.size(); j++)
-        // {
-        //     particle_coordinates_minus_h.push_back(particle_coordinates[j]);
-        //     particle_coordinates_plus_h.push_back(particle_coordinates[j]);
-        // }
-
+        // Computes the numerical double derivative.
         for(int k = 0; k < m_system->getNumberOfDimensions(); k++)
         {
             particle_coordinates_minus_h[k] = (particle_coordinates[k] - h);
             particle_coordinates_plus_h[k] = (particle_coordinates[k] + h);
 
-            // cout << "R: " << particle_coordinates_minus_h[k] << ", " << particle_coordinates_plus_h[k] << endl;
-
-            // particle.setPosition(particle_coordinates_plus_h);
             particles[i]->setPosition(particle_coordinates_plus_h);
 
             double wavefunction_value_plus_h = evaluate(particles);
 
-            // particle.setPosition(particle_coordinates_minus_h);
             particles[i]->setPosition(particle_coordinates_minus_h);
             double wavefunction_value_minus_h = evaluate(particles);
-
-            // cout << wavefunction_value << ", " << wavefunction_value_minus_h << ", " << wavefunction_value_plus_h << endl;
 
             double_derivative += (wavefunction_value_plus_h - 2*wavefunction_value + wavefunction_value_minus_h)/(h*h);
 
             particle_coordinates_minus_h[k] = particle_coordinates[k];
             particle_coordinates_plus_h[k] = particle_coordinates[k];            
 
-            // particle.setPosition(particle_coordinates);
             particles[i]->setPosition(particle_coordinates);
-
         }
-
-        // cout << double_derivative << endl;
-
     }
 
     double_derivative /= (wavefunction_value);
-    // cout << "Double derivative: " <<double_derivative << endl;
 
     return double_derivative;
 }
@@ -125,6 +100,7 @@ void SimpleGaussianNumerical::computeDerivative(double *derivative, std::vector<
     /* Computes the derivative of the wavefunction with respect to one of the particles to be used 
      * in importance sampling. 
      */ 
+
     class Particle particle = *particles[particle_number];
     vector<double> particle_coordinates = particle.getPosition();
     vector<double> particle_coordinates_plus_h = particle_coordinates;
@@ -140,9 +116,7 @@ void SimpleGaussianNumerical::computeDerivative(double *derivative, std::vector<
         double wavefunction_value_plus_h = evaluate(particles);
         particles[particle_number]->setPosition(particle_coordinates);
         particle_coordinates_plus_h[i] -= h;
-        // cout << wavefunction_value << ", " << wavefunction_value_plus_h << endl;
         derivative[i] = (wavefunction_value_plus_h - wavefunction_value)/(h*wavefunction_value);
-        // cout << "Derivative:     " << derivative[i] << endl;
     }
 }
 

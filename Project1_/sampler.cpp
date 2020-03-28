@@ -21,7 +21,7 @@ void Sampler::setNumberOfMetropolisSteps(int steps) {
 }
 
 void Sampler::sample(bool acceptedStep) {
-    // Make sure the sampling variable(s) are initialized at the first step.
+    //Initialize the parameters if it is the start of simulation. 
     if (m_stepNumber == 0) {
         m_cumulativeEnergy = 0;
         m_cumulativeEnergySquared = 0;
@@ -29,9 +29,7 @@ void Sampler::sample(bool acceptedStep) {
         m_cumulativeLocalEnergyTimesAlphaDerivative = 0;
     }
 
-    /* Here you should sample all the interesting things you want to measure.
-     * Note that there are (way) more than the single one here currently.
-     */
+    //Sampling of the interesting quantities. 
     double localEnergy = m_system->getHamiltonian()-> 
                          computeLocalEnergy(m_system->getParticles());
 
@@ -73,8 +71,7 @@ void Sampler::printOutputToTerminal() {
 }
 
 void Sampler::computeAverages() {
-    /* Compute the averages of the sampled quantities. You need to think
-     * thoroughly through what is written here currently; is this correct?
+    /* Computes the final estimates of the quantities of interest. 
      */
     m_energy = m_cumulativeEnergy / m_system->getNumberOfMetropolisSteps();
     m_energySquared = m_cumulativeEnergySquared / m_system->getNumberOfMetropolisSteps();
