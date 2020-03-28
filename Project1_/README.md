@@ -8,7 +8,16 @@ To run the desired simulation, you can set up the system in main.cpp. When the d
 `./compile_project` and then run the simluations using `./vmc`.  
 
 ## Testing
-To test the code, use: 
+To test the code, compile the code with (while in the testing folder) 
+`g++  TEST.cpp  ../sampler.cpp ../system.cpp ../Hamiltonians/*.cpp ../InitialStates/*.cpp ../Math/*.cpp ../Wavefunctions/*.cpp ../particle.cpp  -o test` and then run the tests with `./test "[TEST]"`. If no arguments are given, all tests are run. To run specific tests, change "[TEST]" with one of the following:
+* Test numerical simple Gaussian energy calculation with Metropolis Importance Sampling: "[Numerical Simple Gaussian Energy Calculation Metropolis Importance Sampling]".
+* Test numerical simple Gaussian energy calculation with Metropolis brute-force: "[Numerical Simple Gaussian Energy Calculation Metropolis Brute Force]".
+* Test simple gaussian energy calculation with Metropolis Importance Sampling: "[Simple Gaussian Energy Calculation Metropolis Importance Sampling]".
+* Test simple gaussian energy calculation with Metropolis brute-force: "[Simple Gaussian Energy Calculation Metropolis Brute-Force]"
+* Test Gradient Descent on Simple Gaussian: "[Gradient Descent]". 
+
+## Benchmarks
+In the folders /Data and /Plots various results are presented. In the /Data folder you will find local energies from various runs of the simluations. The files are named according to the simulated systems. In the /Plots folder you will find plots from some of the simluations, also named according to the system simulated. 
 
 
  
