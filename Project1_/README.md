@@ -9,7 +9,7 @@ To run the desired simulation, you can set up the system in main.cpp. When the d
 
 ## Testing
 To test the code, compile the code with (while in the testing folder) 
-`g++  TEST.cpp  ../sampler.cpp ../system.cpp ../Hamiltonians/*.cpp ../InitialStates/*.cpp ../Math/*.cpp ../Wavefunctions/*.cpp ../particle.cpp  -o test` and then run the tests with `./test "[TEST]"`. If no arguments are given, all tests are ran. To run specific tests, change "[TEST]" with one of the following:
+`g++  TEST.cpp  ../sampler.cpp ../system.cpp ../Hamiltonians/*.cpp ../InitialStates/*.cpp ../Math/*.cpp ../Wavefunctions/*.cpp ../particle.cpp  -o test` and then run the tests with `./test "[TEST]"`. If no arguments are given, all tests are run. To run specific tests, change "[TEST]" with one of the following:
 * Test numerical simple Gaussian energy calculation with Metropolis Importance Sampling: "[Numerical Simple Gaussian Energy Calculation Metropolis Importance Sampling]".
 * Test numerical simple Gaussian energy calculation with Metropolis brute-force: "[Numerical Simple Gaussian Energy Calculation Metropolis Brute Force]".
 * Test simple gaussian energy calculation with Metropolis Importance Sampling: "[Simple Gaussian Energy Calculation Metropolis Importance Sampling]".
