@@ -27,7 +27,7 @@ void Sampler::sample(bool acceptedStep) {
         m_cumulativeEnergySquared = 0;
         m_cumulativeAlphaDerivative = 0;
         m_cumulativeLocalEnergyTimesAlphaDerivative = 0;
-    }
+    } 
 
     //Sampling of the interesting quantities. 
     double localEnergy = m_system->getHamiltonian()-> 

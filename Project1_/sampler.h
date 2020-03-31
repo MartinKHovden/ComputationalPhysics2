@@ -27,3 +27,4 @@ private:
     double  m_cumulativeLocalEnergyTimesAlphaDerivative = 0;
     class System* m_system = nullptr;
 };
+ 
