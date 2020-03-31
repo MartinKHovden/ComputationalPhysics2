@@ -7,14 +7,14 @@
 #include "../WaveFunctions/wavefunction.h"
 #include "../WaveFunctions/simplegaussian.h"
 #include "../WaveFunctions/simplegaussian_numerical.h"
-#include "../WaveFunctions/ellipticalgaussian.h"
+// #include "../WaveFunctions/ellipticalgaussian.h"
 #include "../WaveFunctions/ellipticalgaussiananalytical.h"
 #include "../Hamiltonians/hamiltonian.h"
 #include "../Hamiltonians/harmonicoscillator.h"
 #include "../Hamiltonians/harmonicoscillatorinteracting.h"
 #include "../InitialStates/initialstate.h"
 #include "../InitialStates/randomuniform.h"
-#include "../Math/random.h"
+#include "../Math/random.h" 
 #include <math.h>
 
 /**
