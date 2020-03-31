@@ -16,7 +16,9 @@
 #include "InitialStates/randomuniform.h"
 
 /**
- * This file contains the various simulation methods. 
+ * This file contains class for the system togheter with
+ * the various simulation methods and functions for setting 
+ * up the system. 
  */
 
 using namespace std;
@@ -123,9 +125,9 @@ void System::runMetropolisSteps(int numberOfMetropolisSteps) {
 
         samples[i] = m_sampler->getLocalEnergy();
 
-        if( i % 100000 ==0)
+        if( i % 1000 ==0)
         {
-            cout << i << endl;
+            cout << i  << "   " << samples[i] << endl;
         }
 
     }

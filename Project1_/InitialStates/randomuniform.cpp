@@ -35,11 +35,16 @@ void RandomUniform::setupInitialState() {
         for (int j=0; j < m_numberOfDimensions; j++) {
             //The particles are placed according to a gaussian function, since this 
             //resembles the wavefunction of the system. 
-            position.push_back(Normaldistribution2(gen2)*m_system->getStepLength());
+            position.push_back(Normaldistribution2(gen2));//*m_system->getStepLength());
         }
 
         m_particles.push_back(new Particle());
         m_particles.at(i)->setNumberOfDimensions(m_numberOfDimensions);
         m_particles.at(i)->setPosition(position);
     }
+
+    // for(int i=0; i < m_numberOfParticles; i++)
+    // {
+    //     for(int j = )
+    // }
 }
