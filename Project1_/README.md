@@ -18,7 +18,7 @@ To test the code, compile the code with (while in the testing folder)
 * Test Gradient Descent on Simple Gaussian: "[Gradient Descent]". 
 
 ## Benchmarks
-In the folders /Data and /Plots various results are presented. In the /Data folder you will find local energies from various runs of the simluations. The files are named according to the simulated systems. In the /Plots folder you will find plots from some of the simluations, also named according to the system simulated. 
+In the folders /Data and /Plots various results are presented. In the /Data folder you will find local energies from various runs of the simluations. The files are named according to the simulated systems. In the /Plots folder you will find plots from some of the simluations, also named according to the system simulated. For a better view and description of the plots, I would suggest looking at the jupyter notebooks. Here all the plots are presented.  
 
 
  
