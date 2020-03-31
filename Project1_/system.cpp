@@ -103,7 +103,7 @@ void System::runMetropolisSteps(int numberOfMetropolisSteps) {
     m_sampler->setNumberOfMetropolisSteps(numberOfMetropolisSteps);
 
     ofstream outfile;
-    outfile.open("Data/interacting_metropolis_local_energy_values_a_" + to_string(getA()) + 
+    outfile.open("Data/non_interacting_metropolis_local_energy_values_a_" + to_string(getA()) + 
                         "_num_particles_" + to_string(getNumberOfParticles()) + "_num_dims_" + 
                                         to_string(getNumberOfDimensions()) + "_alpha_" + 
                                                 to_string(getWaveFunction()->getParameters()[0]) + ".txt"  );
@@ -243,12 +243,12 @@ void System::runImportanceSamplingSteps(int numberOfImportanceSamplingSteps, dou
      * numberOfMImportanceSamplingSteps: int, Number of iterations in the Metropolis algorithm. 
      */
     m_particles                 = m_initialState->getParticles();
-    m_sampler                   = new Sampler(this);
+    m_sampler                   = new Sampler(this); 
     m_numberOfMetropolisSteps   = numberOfImportanceSamplingSteps;
     m_sampler->setNumberOfMetropolisSteps(numberOfImportanceSamplingSteps);
 
     ofstream outfile;
-    outfile.open("Data/non_interacting_importance_sampling_metropolis_local_energy_values_a_" + to_string(getA()) + "_num_particles_" + to_string(getNumberOfParticles()) + "_num_dims_" + to_string(getNumberOfDimensions()) + "_alpha_" + to_string(getWaveFunction()->getParameters()[0]) + ".txt"  );
+    outfile.open("Data/non_interacting_importance_sampling_metropolis_local_energy_values_a_" + to_string(getA()) + "_steplength_" +to_string(timestep)+ "_num_particles_" + to_string(getNumberOfParticles()) + "_num_dims_" + to_string(getNumberOfDimensions()) + "_alpha_" + to_string(getWaveFunction()->getParameters()[0]) + ".txt"  );
     
     std::vector<double> samples;
     samples.reserve(numberOfImportanceSamplingSteps);

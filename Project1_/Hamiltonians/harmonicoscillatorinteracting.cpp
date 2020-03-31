@@ -60,7 +60,7 @@ double HarmonicOscillatorInteracting::computeLocalEnergy(std::vector<Particle*> 
 
     term2 = 0.5*term2;
 
-    //Calculating the last term of the Hamiltonian:
+    //Calculating the last term of the Hamiltonianm which can be set to zero, since we will never go to a position where anything else can happen:
     double term3=0;
 
     double local_energy = kinetic_energy + term2 + term3; 
@@ -68,37 +68,37 @@ double HarmonicOscillatorInteracting::computeLocalEnergy(std::vector<Particle*> 
     return local_energy;
 }
 
-double HarmonicOscillatorInteracting::computeTotalPotentialInt(std::vector<Particle*> particles)
-{
-    int num_particles = m_system->getNumberOfParticles();
-    int num_dims = m_system->getNumberOfDimensions();
+// double HarmonicOscillatorInteracting::computeTotalPotentialInt(std::vector<Particle*> particles)
+// {
+//     int num_particles = m_system->getNumberOfParticles();
+//     int num_dims = m_system->getNumberOfDimensions();
 
-    double interactingPotential = 0;
-    double a = m_system->getA(); 
+//     double interactingPotential = 0;
+//     double a = m_system->getA(); 
 
-    for(int i = 0; i < num_particles; i++)
-    {
-        for(int j = i+1; j < num_particles; j++)
-        {
-            interactingPotential += computePotentialInt(particles, i, j, a);
-        }
-    }
-}
+//     for(int i = 0; i < num_particles; i++)
+//     {
+//         for(int j = i+1; j < num_particles; j++)
+//         {
+//             interactingPotential += computePotentialInt(particles, i, j, a);
+//         }
+//     }
+// }
 
-double HarmonicOscillatorInteracting::computePotentialInt(std::vector<Particle*> particles, int i , int j, double a)
-{
-    std::vector<double> position_particle1 = particles[i]->getPosition();
-    std::vector<double> position_particle2 = particles[j]->getPosition();
-    double return_value;
-    if(computeDistance(position_particle1, position_particle2) <= a)
-    {
-        return_value = 10000000000000000;
-    }
-    else 
-    {
-        return_value = 0;
-    }
-}
+// double HarmonicOscillatorInteracting::computePotentialInt(std::vector<Particle*> particles, int i , int j, double a)
+// {
+//     std::vector<double> position_particle1 = particles[i]->getPosition();
+//     std::vector<double> position_particle2 = particles[j]->getPosition();
+//     double return_value;
+//     if(computeDistance(position_particle1, position_particle2) <= a)
+//     {
+//         return_value = 10000000000000000;
+//     }
+//     else 
+//     {
+//         return_value = 0;
+//     }
+// }
 
 double HarmonicOscillatorInteracting::computeDistance(std::vector<double> p1, std::vector<double> p2)
 {

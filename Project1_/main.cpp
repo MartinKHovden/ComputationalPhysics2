@@ -19,10 +19,10 @@ using namespace std;
  
 int main() {
     int numberOfDimensions  = 3;
-    int numberOfParticles   = 10;
+    int numberOfParticles   = 100;
     int numberOfSteps       = (int) pow(2.0, 19.0);
     double omega            = 1.0;          // Oscillator frequency.
-    double alpha            = 0.4999;          // Variational parameter.
+    double alpha            = 0.6;          // Variational parameter.
     double stepLength       = 0.5;          // Metropolis step length.
     double equilibration    = 0.1;          // Amount of the total steps used for equilibration.
     double D                = 0.5;          // Diffusion constant. Will use D = 0.5.
@@ -35,7 +35,7 @@ int main() {
 
     System* system = new System();
 
-    // CHOOSE HAMILTONIAN:
+    // CHOOSE HAMILTONIAN: 
 
     // system->setHamiltonian              (new HarmonicOscillator(system, omega)); double a = 0.0;
     system->setHamiltonian              (new HarmonicOscillatorInteracting(system, omega)); double a = 0.0043;
@@ -58,9 +58,9 @@ int main() {
 
     // CHOOSE SIMULATION: 
 
-    // system->runMetropolisSteps          (numberOfSteps);
+    system->runMetropolisSteps          (numberOfSteps);
     // system->runImportanceSamplingSteps  (numberOfSteps, timestep);
-    system->runGradientDescent          (0.000001, 0.5,100, pow(2, 19)/10., 0.001);
+    // system->runGradientDescent          (0.000001, 0.5,100, pow(2, 19)/10., 0.001);
     // system->runComputeOneBodyDensity       (1e6);
 
     return 0;

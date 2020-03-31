@@ -21,6 +21,14 @@ EllipticalGaussianAnalytical::EllipticalGaussianAnalytical(class System* system,
 double EllipticalGaussianAnalytical::evaluate(std::vector<class Particle*> particles)
 {
     /* Function for evaluating the wave function value. 
+     *
+     * Params:
+     * -------
+     * particles: vector of particles in the system.
+     * 
+     * Returns:
+     * --------
+     * The value of the full wave function for the particles. 
      */
 
     double return_value = evaluate_non_interacting_part(particles)*evaluate_correlation_part(particles);
@@ -31,12 +39,22 @@ double EllipticalGaussianAnalytical::evaluate(std::vector<class Particle*> parti
 double EllipticalGaussianAnalytical::evaluate_non_interacting_part(std::vector<class Particle*> particles)
 {
     /* Function for evaluating the gaussian part of the wave function. 
+     *
+     * Params:
+     * -------
+     * particles: vector of particles in the system
+     * 
+     * Returns:
+     * --------
+     * The value of the gaussian part of the wavefunction for the particles. 
      */
 
+    // The argument of the exponential in the gaussian function. 
     double exp_argument = 0;
 
     double beta = m_system->getBeta();
 
+    // Iterates over each particle and adds the contribution to the exp argument. 
     for(int i = 0; i < particles.size(); i++)
     {
         double temp = 0;
@@ -46,6 +64,7 @@ double EllipticalGaussianAnalytical::evaluate_non_interacting_part(std::vector<c
 
         for(int dim = 0; dim < particle_position.size(); dim ++)
         {
+            // If 3. dim, then multiply by beta.
             if(dim == 2)
             {
                 temp += beta*particle_position[dim]*particle_position[dim];            
@@ -60,6 +79,7 @@ double EllipticalGaussianAnalytical::evaluate_non_interacting_part(std::vector<c
     }
 
     double alpha = m_parameters[0];
+    //Takes the exponential of the exp argument to get the final function value. 
     double g_product = exp(-alpha*exp_argument);
 
     return g_product; 
@@ -69,11 +89,20 @@ double EllipticalGaussianAnalytical::evaluate_non_interacting_part(std::vector<c
 double EllipticalGaussianAnalytical::evaluate_correlation_part(std::vector<class Particle*> particles)
 {
     /* Function for evaluating the Jastrow factor (correlation part). 
+     * 
+     * Params:
+     * -------
+     * particles: Vector of particles in the system
+     * 
+     * Returns: 
+     * --------
+     * The value of the correlation function for the particles. 
      */
 
     double num_particles = m_system->getNumberOfParticles();
     double a = m_system->getA();
 
+    // Stores the product of the jastrow factors. 
     double result = 1;
 
     for(int j = 0; j < num_particles; j++)
@@ -102,7 +131,16 @@ double EllipticalGaussianAnalytical::evaluate_correlation_part(std::vector<class
 
 double EllipticalGaussianAnalytical::calculate_distance(std::vector<double> r1_position, std::vector<double> r2_position)
 {
-    /* Function for calcualting the distance between two particles. 
+    /* Function for calcualting the distance between two particles.
+     * 
+     * Params:
+     * ------
+     * r1_position: vector with coordinates of particle 1. 
+     * r2_position: vector with coordinates of particle 2.
+     * 
+     * Returns:
+     * --------
+     * The distance between the two particles. 
      */ 
 
     double temp = 0;
@@ -120,7 +158,18 @@ double EllipticalGaussianAnalytical::calculate_distance(std::vector<double> r1_p
 
 double EllipticalGaussianAnalytical::computeDoubleDerivative(std::vector<class Particle*> particles)
 {
-    double double_derivative = 0;
+    /* Computes the laplcian of the wavefunction divided by the wavefunction value as a function of the particles in the system. 
+     *
+     * Params:
+     * -------
+     * particles: vector of particle objects. 
+     * 
+     * Returns:
+     * --------
+     * The laplacian of the wavefunction. 
+     */
+
+    double laplacian = 0;
     double alpha = m_parameters[0];
 
     double beta = m_system->getBeta();
@@ -150,28 +199,26 @@ double EllipticalGaussianAnalytical::computeDoubleDerivative(std::vector<class P
             }
         }
 
-        // std::cout <<  "Temp1 : " << temp1 << std::endl;
+        laplacian += term1;
 
-        double_derivative += term1;
-
-        //Calculating term 2 and 3
-
+        //Calculating term 2 (laplacian of phi divided by phi)*(sum of (r_k - r_j) times u derivative divided b the distance) 
+        // and term 3 (sum of (r_k - r_j) times u derivative squared)
         double term2 = 0;
         double term3 = 0;
 
-        std::vector<double> temp4;
+        std::vector<double> temp4; //Vector for u'(r_ij)(r_k - r_j)/r_kj. 
         temp4.resize(num_dims);
 
         for(int dim = 0; dim < num_dims; dim++)
         {
-            temp4[dim] = 0;
+            temp4[dim] = 0; 
         }
 
         for(int j = 0; j < num_particles; j++)
         {
             std::vector<double> particle_j_position = particles[j]->getPosition();
 
-            double temp3 = 0;
+            double temp3 = 0; //Holds the value of the terms 2 times the gradient of phi divided by phi. 
 
             if(j != k)
             {
@@ -206,47 +253,52 @@ double EllipticalGaussianAnalytical::computeDoubleDerivative(std::vector<class P
             
         }
 
-
         for(int dim = 0; dim < num_dims; dim++)
         {
             term3 += temp4[dim]*temp4[dim];
         }
 
-        double_derivative += term3;
+        laplacian += term3;
 
-        // std::cout <<  "Temp2 : " << temp2 << std::endl;
-
-        double_derivative += term2;
+        laplacian += term2;
    
-        //Calculating term 5
-        double temp6 = 0;
+        //Calculating term 4: sum of double derivative of u + 2 divided by distance between particles times the derivative of u. 
+        double term4 = 0;
 
         for(int j = 0; j < num_particles; j ++)
         {
             std::vector<double> particle_j_position = particles[j]->getPosition();
             if(j != k)
             {
-                temp6 += computeUDoubleDerivative(particle_k_position, particle_j_position, a) ;
-                temp6 += 2*computeUDerivative(particle_k_position, particle_j_position, a)/calculate_distance(particle_k_position, particle_j_position);
+                term4 += computeUDoubleDerivative(particle_k_position, particle_j_position, a) ;
+                term4 += 2*computeUDerivative(particle_k_position, particle_j_position, a)/calculate_distance(particle_k_position, particle_j_position);
                 
             }
             else
             {
-                temp6 += 0;
+                term4 += 0;
             } 
  
         }
 
-        double_derivative += temp6;
+        laplacian += term4;
 
     }    
 
-    return double_derivative;
+    return laplacian;
 }
 
 void EllipticalGaussianAnalytical::computeDerivative(double *derivative, std::vector<class Particle*> particles, int particle_number)
 {
-    /* Computes the derivative of the wavefunction with respect to particle k. 
+    /* Computes the derivative of the wavefunction with respect to particle k divided by the wavefunction value. 
+     *
+     * Params:
+     * -------
+     * particles: vector containing the particles in the system
+     * 
+     * Returns:
+     * --------
+     * particle_number: Computes the derivative with respect to this particle. 
      */
 
     std::vector<double> particle_k_coordinates = particles[particle_number]->getPosition();
@@ -277,6 +329,16 @@ void EllipticalGaussianAnalytical::computeDerivative(double *derivative, std::ve
 
 void EllipticalGaussianAnalytical::computeDriftForce(double *drift_force, double * gradient, int particle_number)
 { 
+    /* Computes the drift force with respect to particle k.
+     * Returns nothing, but updates the drift force vector. 
+     * 
+     * Params:
+     * -------
+     * drift_force: pointer to a vector that will contain the drift force
+     * gradient: pointer to a vector that contains the gradient of phi. 
+     * particle_number: particle to find the drift with respect to. 
+     */
+
     int number_of_dimensions = m_system->getNumberOfDimensions();
 
     for(int j = 0; j < number_of_dimensions; j ++)
@@ -288,16 +350,46 @@ void EllipticalGaussianAnalytical::computeDriftForce(double *drift_force, double
 
 double EllipticalGaussianAnalytical::computeUDerivative(std::vector<double> r1_position, std::vector<double> r2_position, double a)
 {
+    /* Computes the derivative of u.
+     *
+     * Params:
+     * -------
+     * r1_position: position of particle 1.
+     * r2_position: position of particle 2. 
+     * a: the hard-spere radius of each paricle.
+     * 
+     * Returns: 
+     * --------
+     * The derivative of u with respect to particle 1. 
+     */
     return a/(calculate_distance(r1_position, r2_position)*(calculate_distance(r1_position, r2_position)) - a);
 }
 
 double EllipticalGaussianAnalytical::computeUDoubleDerivative(std::vector<double> r1_position, std::vector<double> r2_position, double a)
 {
+    /* Computes the double derivative of u.
+     *
+     * Params:
+     * -------
+     * r1_position: position of particle 1.
+     * r2_position: position of particle 2. 
+     * a: the hard-spere radius of each paricle.
+     * 
+     * Returns: 
+     * --------
+     * The double derivative of u with respect to particle 1. 
+     */
     return (a*a - 2*a*calculate_distance(r1_position, r2_position))/((calculate_distance(r1_position, r2_position) - a*calculate_distance(r1_position, r2_position))*(calculate_distance(r1_position, r2_position) - a*calculate_distance(r1_position, r2_position)));
 }
 
 double EllipticalGaussianAnalytical::computeAlphaDerivative(std::vector<Particle*> particles)
 {
+    /* Computes the alpha derivative of the wavefunction. 
+     * 
+     * Params:
+     * -------
+     * particles: vector containing the particles in the system. 
+     */
     int num_particles = m_system->getNumberOfParticles();
     int num_dims = m_system->getNumberOfDimensions();
 

@@ -18,7 +18,7 @@ SimpleGaussian::SimpleGaussian(class System* system, double alpha) :
 }
 
 double SimpleGaussian::evaluate(std::vector<class Particle*> particles) {
-    /* Function for evaluating the wave function value.
+    /* Function for evaluating the wave function value for the particles in the system.
      * 
      * Params:
      * ------
@@ -26,7 +26,7 @@ double SimpleGaussian::evaluate(std::vector<class Particle*> particles) {
      * 
      * Returns:
      * --------
-     * g_product: The wave function value for the given system.  
+     * double g_product: The wave function value for the given system.  
      */
 
     double exp_argument = 0;
@@ -53,15 +53,15 @@ double SimpleGaussian::evaluate(std::vector<class Particle*> particles) {
 
 
 double SimpleGaussian::computeDoubleDerivative(std::vector<class Particle*> particles) {
-    /* Computes the double derivative of the wavefunction with respect to the particles. 
-     * This quantity is needed to compute the energy
+    /* Computes the double derivative of the wavefunction divided by the wavefunction value. 
+     * This quantity is needed to compute the energy.
      * 
      * Params:
      * -------
      * particles: Vector that contains the particles in the system. 
      * 
      * Returns: 
-     * Returns the laplacian of the wave function. 
+     * Returns the laplacian of the wave function divided by the wavefunction value. 
      */
 
     int num_part = m_system->getNumberOfParticles();
@@ -96,7 +96,7 @@ double SimpleGaussian::computeDoubleDerivative(std::vector<class Particle*> part
 
 void SimpleGaussian::computeDerivative(double *derivative, std::vector<class Particle*> particles, int particle_number)
 {
-    /* Computes the derivative of the wavefunction with respect to one of the particles to be used 
+    /* Computes the derivative of the wavefunction with respect to one of the particles divided by the wavefunction value to be used 
      * in importance sampling. 
      * 
      * Params:
@@ -143,6 +143,14 @@ void SimpleGaussian::computeDriftForce(double *drift_force, double * gradient, i
 double SimpleGaussian::computeAlphaDerivative(std::vector<class Particle*> particles)
 {
     /* Computes the derivative of the wave function with respect to alpha.
+     * 
+     * Params:
+     * -------
+     * particles: vector of particles in the system. 
+     * 
+     * Returns:
+     * --------
+     * double derivative: The derivative of the wavefunction with respect to alpha divided by the wavefunction value. 
      */
 
     int num_particles = m_system->getNumberOfParticles();
