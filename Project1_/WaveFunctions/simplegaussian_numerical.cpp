@@ -15,7 +15,7 @@ SimpleGaussianNumerical::SimpleGaussianNumerical(class System* system, double al
     m_numberOfParameters = 1;
     m_parameters.reserve(1);
     m_parameters.push_back(alpha);
-}
+} 
 
 double SimpleGaussianNumerical::evaluate(std::vector<class Particle*> particles) {
     /* Function for evaluating the wave function value. 

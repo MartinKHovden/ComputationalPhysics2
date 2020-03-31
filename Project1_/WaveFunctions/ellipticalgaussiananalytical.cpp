@@ -8,7 +8,7 @@
 #include "ellipticalgaussiananalytical.h"
 
 
-using namespace std;
+using namespace std; 
 
 EllipticalGaussianAnalytical::EllipticalGaussianAnalytical(class System* system, double alpha) : WaveFunction(system, alpha)
 {

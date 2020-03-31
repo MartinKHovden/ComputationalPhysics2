@@ -139,7 +139,7 @@ void SimpleGaussian::computeDriftForce(double *drift_force, double * gradient, i
         drift_force[j] = 2*gradient[j];
     }
 }
-
+ 
 double SimpleGaussian::computeAlphaDerivative(std::vector<class Particle*> particles)
 {
     /* Computes the derivative of the wave function with respect to alpha.

@@ -10,3 +10,4 @@ public:
     void computeDriftForce(double *drift_force, double * gradient, int particle_number);
     double computeAlphaDerivative(std::vector<class Particle*> particles);
 };
+ 
