@@ -25,7 +25,7 @@
 using namespace std;
 
  
-int main() {
+int main() { 
     int numberOfDimensions  = 3;
     int numberOfParticles   = 100;
     int numberOfSteps       = (int) pow(2.0, 19.0);
