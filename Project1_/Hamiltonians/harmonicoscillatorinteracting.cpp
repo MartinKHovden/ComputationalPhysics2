@@ -66,7 +66,7 @@ double HarmonicOscillatorInteracting::computeLocalEnergy(std::vector<Particle*> 
     double local_energy = kinetic_energy + term2 + term3; 
 
     return local_energy;
-}
+} 
 
 // double HarmonicOscillatorInteracting::computeTotalPotentialInt(std::vector<Particle*> particles)
 // {
