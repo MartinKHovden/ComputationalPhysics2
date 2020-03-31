@@ -20,7 +20,7 @@
  * the various simulation methods and functions for setting 
  * up the system. 
  */
-
+ 
 using namespace std;
 
 std::random_device rd;
