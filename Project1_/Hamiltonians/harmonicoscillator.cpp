@@ -6,7 +6,7 @@
 #include "../WaveFunctions/wavefunction.h"
 
 using std::cout;
-using std::endl;
+using std::endl; 
 
 HarmonicOscillator::HarmonicOscillator(System* system, double omega) :
         Hamiltonian(system) {

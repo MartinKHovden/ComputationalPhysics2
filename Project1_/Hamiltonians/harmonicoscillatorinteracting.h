@@ -15,6 +15,6 @@ public:
 
 
 private:
-    double m_omega = 0;
+    double m_omega = 0; 
 };
 

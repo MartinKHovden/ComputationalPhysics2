@@ -8,5 +8,5 @@ public:
 
 protected:
     class System* m_system = nullptr;
-};
+}; 
 

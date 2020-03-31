@@ -9,7 +9,7 @@ public:
     double computeLocalEnergy(std::vector<Particle*> particles);
     double computeKineticEnergy();
 
-private:
+private: 
     double m_omega = 0;
 };
 
