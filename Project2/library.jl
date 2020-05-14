@@ -1,5 +1,7 @@
-module Test
+module library
 
+# Library with different methods for Markov Chain Monte Carlo sampling and optmization
+# for simluating two electrons in a potential trap.
 # Code based on the lecture notes written by Morten Hjorth-Jensen for FYS441: Computational Physics II
 # and the code provided for the course at:
 # https://github.com/CompPhysics/ComputationalPhysics2/blob/gh-pages/doc/Programs/BoltzmannMachines/MLcpp/src/
@@ -7,7 +9,14 @@ module Test
 using LinearAlgebra
 using Random
 using Profile
+# using Plots
 
+
+"""
+    NQS
+
+Struct for collecting the variables and parameters in the Boltzman machine.
+"""
 struct NQS
 
     num_particles::Int64
@@ -26,6 +35,9 @@ struct NQS
 
 end
 
+"""
+    computeInteractionTerm()
+"""
 function computeInteractionTerm(nqs::NQS)
 
     interaction_term = 0
@@ -286,6 +298,7 @@ function metropolisStepBruteForce(nqs::NQS, step_length::Float64, precalc)
     old_coordinate = nqs.x[coordinate]
     nqs.x[coordinate] += (rand(Float64) - 0.5)*step_length
 
+
     precalc = nqs.b + transpose((1.0/nqs.sigma_squared)*(transpose(nqs.x)* nqs.w))
 
     new_wavefunction_value = computePsi(nqs, precalc)
@@ -366,17 +379,20 @@ function runMetorpolisBruteForce(nqs::NQS, num_mc_iterations::Int64, burn_in::Fl
     local_energy_derivative_b = 2*(mc_local_energy_psi_derivative_b - mc_local_energy*mc_psi_derivative_b)
     local_energy_derivative_w = 2*(mc_local_energy_psi_derivative_w - mc_local_energy*mc_psi_derivative_w)
 
-    println(mc_local_energy)
-
     return mc_local_energy, local_energy_derivative_a, local_energy_derivative_b, local_energy_derivative_w
 
 end
 
 function runOptimizationBruteForce(nqs::NQS, num_iterations::Int64, num_mc_iterations::Int64, mc_burn_in::Float64, mc_step_length::Float64, learning_rate::Float64)
+    local_energies::Array{Float64, 2} = zeros(Float64, (num_iterations, 1))
     for k = 1:num_iterations
-        local_energy, _grad_a, _grad_b, _grad_w = runMetorpolisBruteForce(nqs, num_mc_iterations, mc_burn_in, mc_step_length)
+        local_energy,_grad_a,  _grad_b, _grad_w = runMetorpolisBruteForce(nqs, num_mc_iterations, mc_burn_in, mc_step_length)
         optimizationStep(nqs, _grad_a, _grad_b, _grad_w, learning_rate)
+        local_energies[k] = local_energy
+        # println("Iteration = ", k, "   E_L = ", local_energy)
     end
+    println(local_energies)
+    return local_energies
 end
 
 function computeDriftForce(nqs::NQS, particle_number::Int64, precalc::Array{Float64, 2})
@@ -517,7 +533,7 @@ function runOptimizationImportanceSampling(nqs::NQS, num_iterations::Int64, num_
     for k = 1:num_iterations
         local_energy, _grad_a, _grad_b, _grad_w = runMetropolisImportanceSampling(nqs, num_iterations, num_mc_iterations, mc_burn_in, importance_time_step, D)
         optimizationStep(nqs, _grad_a, _grad_b, _grad_w, learning_rate)
-        println(local_energy, nqs.h)
+        println("Iteration = ", k, "    E = ", local_energy, nqs.h)
     end
 end
 
@@ -626,7 +642,33 @@ function runOptimizationGibbsSampling(nqs::NQS, num_iterations::Int64, num_mc_it
     for k = 1:num_iterations
         local_energy, _grad_a, _grad_b, _grad_w = runMetropolisGibbsSampling(nqs::NQS, num_iterations::Int64, num_mc_iterations::Int64, mc_burn_in::Float64)
         optimizationStep(nqs, _grad_a, _grad_b, _grad_w, learning_rate)
-        println(local_energy, nqs.h)
+        println(local_energy)
+    end
+
+end
+"""
+    grid_search_to_files()
+
+Function for doing a grid search and writing the results from each run to files.
+"""
+function grid_search_to_files(nqs::NQS, num_mc_iterations::Int64, method::string)
+    learning_rates::Array{Float64,1} = [1.0, 0.5, 0.1, 0.05, 0.01]
+    hidden_nodes::Array{Float64,1} = [2, 3, 4, 5]
+
+    len_learning_rates = length(learning_rates)
+    len_hidden_nodes = length(hidden_nodes)
+
+
+
+    for i = 1:len_learning_rates
+        for j = 1:len_hidden_nodes
+
+            if method == "bf"
+                local_energies = runMetorpolisBruteForce()
+            elseif method == "is"
+
+
+        end
     end
 
 end
@@ -637,29 +679,29 @@ function main()
     num_particles = 2                          # Number of particles
     num_dims = 2                               # Number of dimensions
     M::Int64 = num_particles*num_dims          # Number of visible nodes
-    N::Int64 = 10                               # Number of hidden nodes
-    sigma_squared = 0.5                        # RBM variance
-    interacting = true                        # Interacting system?
+    N::Int64 = 2                               # Number of hidden nodes
+    sigma_squared = 1.0                        # RBM variance
+    sigma_squared_gibbs = 0.5
+    interacting = false                        # Interacting system?
 
     mc_burn_in = 0.2                           # Fraction of steps before sampling
-    num_mc_cycles = 100000                    # Number of steps in the MC algorithm
-    num_optimization_steps = 100                # Number of optimization steps
+    num_mc_cycles = 10000                    # Number of steps in the MC algorithm
+    num_optimization_steps = 200                # Number of optimization steps
 
-    brute_force_step_length = 0.5              # Step-length in the Brute-force Metropolis
+    brute_force_step_length = 1.0              # Step-length in the Brute-force Metropolis
     importance_sampling_step_length = 0.05     # Time-step in the importance sampling algorithm
     learning_rate = 0.05                        # Learning rate in the optimization algorithm
     D = 0.5                                    # Diffusion constant for importance sampling
 
     system = setUpSystemRandomUniform(num_particles, num_dims, M, N, sigma_squared, interacting)
+    # system_gibbs = setUpSystemRandomUniform(num_particles, num_dims, M, N, sigma_squared_gibbs, interacting)
 
-    # @time runOptimizationBruteForce(system, num_optimization_steps, num_mc_cycles, mc_burn_in, brute_force_step_length, learning_rate)
+    @time runOptimizationBruteForce(system, num_optimization_steps, num_mc_cycles, mc_burn_in, brute_force_step_length, learning_rate)
     # @time runOptimizationImportanceSampling(system, num_optimization_steps, num_mc_cycles, mc_burn_in, importance_sampling_step_length, D, learning_rate)
-    @time runOptimizationGibbsSampling(system, num_optimization_steps, num_mc_cycles, mc_burn_in, learning_rate)
+    # @time runOptimizationGibbsSampling(system_gibbs, num_optimization_steps, num_mc_cycles, mc_burn_in, learning_rate)
 
 end
 
 main()
-
-export runMetorpolisBruteForce
 
 end
