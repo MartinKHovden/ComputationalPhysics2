@@ -1,3 +1,6 @@
+# Copied from Morten Hjorth-Jensens notebook: notebook2.ipynd found at:
+# https://github.com/CompPhysics/ComputationalPhysics2/
+
 # 2-electron VMC code for 2dim quantum dot with importance sampling
 # Using gaussian rng for new positions and Metropolis- Hastings
 # Added restricted boltzmann machine method for dealing with the wavefunction
