@@ -384,17 +384,15 @@ function runMetorpolisBruteForce(nqs::NQS, num_mc_iterations::Int64, burn_in::Fl
 end
 
 function runOptimizationBruteForce(nqs::NQS, num_iterations::Int64, num_mc_iterations::Int64, mc_burn_in::Float64, mc_step_length::Float64, learning_rate::Float64)
-
     local_energies::Array{Float64, 2} = zeros(Float64, (num_iterations, 1))
-
     for k = 1:num_iterations
         local_energy,_grad_a,  _grad_b, _grad_w = runMetorpolisBruteForce(nqs, num_mc_iterations, mc_burn_in, mc_step_length)
         optimizationStep(nqs, _grad_a, _grad_b, _grad_w, learning_rate)
         local_energies[k] = local_energy
+        # println("Iteration = ", k, "   E_L = ", local_energy)
     end
-
+    println(local_energies)
     return local_energies
-
 end
 
 function computeDriftForce(nqs::NQS, particle_number::Int64, precalc::Array{Float64, 2})
@@ -532,17 +530,11 @@ function runMetropolisImportanceSampling(nqs::NQS, num_iterations::Int64, num_mc
 end
 
 function runOptimizationImportanceSampling(nqs::NQS, num_iterations::Int64, num_mc_iterations::Int64, mc_burn_in::Float64, importance_time_step::Float64, D::Float64, learning_rate::Float64)
-
-    local_energies::Array{Float64, 2} = zeros(Float64, (num_iterations, 1))
-
     for k = 1:num_iterations
         local_energy, _grad_a, _grad_b, _grad_w = runMetropolisImportanceSampling(nqs, num_iterations, num_mc_iterations, mc_burn_in, importance_time_step, D)
         optimizationStep(nqs, _grad_a, _grad_b, _grad_w, learning_rate)
-        local_energies[k] = local_energy
-        # println("Iteration = ", k, "    E = ", local_energy, nqs.h)
+        println("Iteration = ", k, "    E = ", local_energy, nqs.h)
     end
-
-    return local_energies
 end
 
 function metropolisStepGibbsSampling(nqs::NQS, precalc)
@@ -677,8 +669,6 @@ function grid_search_to_files(num_particles::Int64, num_dims::Int64, method::Str
     num_mc_iterations = 20000
     num_optimization_steps = 100
 
-    D = 0.5
-
     for i = 1:len_learning_rates
         for j = 1:len_hidden_nodes
 
@@ -702,9 +692,9 @@ function grid_search_to_files(num_particles::Int64, num_dims::Int64, method::Str
                 sigma_squared = 1.0
                 system = setUpSystemRandomUniform(num_particles, num_dims, M, num_hidden_nodes, sigma_squared, interacting)
                 local_energies = runOptimizationImportanceSampling(system, num_optimization_steps, num_mc_iterations, mc_burn_in, importance_sampling_step_length, D, learning_rate)
-                filename = string("output/interacting_", interacting, "/" , method, "/lr_", string(learning_rate), "_hidden_", string(num_hidden_nodes), string(sigma_squared), "_importance_step_length_", string(importance_sampling_step_length), "_num_mc_iterations_", num_mc_iterations, ".txt")
+                filename = string("output/interacting_", interacting, "_" , method, "_lr_", string(learning_rate), "_hidden_", string(num_hidden_nodes), ".txt")
                 open(filename, "w") do io
-                    println(io, "sigma=", sigma_squared, " importance_sampling_step_length=", importance_sampling_step_length, " num_mc_iterations=", num_mc_iterations)
+                    println(io, "sigma=", sigma_squared, " mc_step_length=", mc_step_length, " num_mc_iterations=", num_mc_iterations)
                     # println(io, "TEST = ", local_energies[1])
                     for e in local_energies
                         println(io, e)
