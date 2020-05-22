@@ -9,8 +9,6 @@ module library
 using LinearAlgebra
 using Random
 using Profile
-# using Plots
-
 
 """
     NQS
@@ -647,11 +645,16 @@ end
 
 function runOptimizationGibbsSampling(nqs::NQS, num_iterations::Int64, num_mc_iterations::Int64, mc_burn_in::Float64, learning_rate::Float64)
 
+    local_energies::Array{Float64, 2} = zeros(Float64, (num_iterations, 1))
+
     for k = 1:num_iterations
         local_energy, _grad_a, _grad_b, _grad_w = runMetropolisGibbsSampling(nqs::NQS, num_iterations::Int64, num_mc_iterations::Int64, mc_burn_in::Float64)
         optimizationStep(nqs, _grad_a, _grad_b, _grad_w, learning_rate)
-        println(local_energy)
+        local_energies[k] = local_energy
+        # println(local_energy)
     end
+
+    return local_energies
 
 end
 
@@ -660,7 +663,7 @@ end
 
 Function for doing a grid search and writing the results from each run to files.
 """
-function grid_search_to_files(num_particles::Int64, num_dims::Int64, method::String, interacting::Bool)
+function write_grid_search_to_files(num_particles::Int64, num_dims::Int64, method::String, interacting::Bool)
     learning_rates::Array{Float64,1} = [1.0, 0.1, 0.01]
     hidden_nodes::Array{Int64,1} = [2, 3, 4]
 
@@ -674,8 +677,8 @@ function grid_search_to_files(num_particles::Int64, num_dims::Int64, method::Str
     mc_step_length = 0.5
     importance_sampling_step_length = 0.5
 
-    num_mc_iterations = 20000
-    num_optimization_steps = 100
+    num_mc_iterations = 100000
+    num_optimization_steps = 200
 
     D = 0.5
 
@@ -688,10 +691,13 @@ function grid_search_to_files(num_particles::Int64, num_dims::Int64, method::Str
             if method == "bf"
                 sigma_squared = 1.0
                 system = setUpSystemRandomUniform(num_particles, num_dims, M, num_hidden_nodes, sigma_squared, interacting)
+                start = time()
                 local_energies = runOptimizationBruteForce(system, num_optimization_steps, num_mc_iterations, mc_burn_in, mc_step_length, learning_rate)
-                filename = string("output/interacting_", interacting, "/" , method, "/lr_", string(learning_rate), "_hidden_", string(num_hidden_nodes), "_sigma_", string(sigma_squared), "_mc_step_length_", string(mc_step_length), "_num_mc_iterations_", num_mc_iterations, ".txt")
+                runtime = time() - start
+                println(runtime)
+                filename = string("output/interacting_", interacting, "/" , method, "/num_particles_",num_particles, "_num_dims_",num_dims , "_lr_", string(learning_rate), "_hidden_", string(num_hidden_nodes), "_sigma_", string(sigma_squared), "_mc_step_length_", string(mc_step_length), "_num_mc_iterations_", num_mc_iterations, ".txt")
                 open(filename, "w") do io
-                    println(io, "sigma=", sigma_squared, " mc_step_length=", mc_step_length, " num_mc_iterations=", num_mc_iterations)
+                    println(io, "sigma=", sigma_squared, " time=", runtime, " mc_step_length=", mc_step_length, " num_mc_iterations=", num_mc_iterations)
                     # println(io, "TEST = ", local_energies[1])
                     for e in local_energies
                         println(io, e)
@@ -701,10 +707,13 @@ function grid_search_to_files(num_particles::Int64, num_dims::Int64, method::Str
             elseif method == "is"
                 sigma_squared = 1.0
                 system = setUpSystemRandomUniform(num_particles, num_dims, M, num_hidden_nodes, sigma_squared, interacting)
+                start = time()
                 local_energies = runOptimizationImportanceSampling(system, num_optimization_steps, num_mc_iterations, mc_burn_in, importance_sampling_step_length, D, learning_rate)
-                filename = string("output/interacting_", interacting, "/" , method, "/lr_", string(learning_rate), "_hidden_", string(num_hidden_nodes), string(sigma_squared), "_importance_step_length_", string(importance_sampling_step_length), "_num_mc_iterations_", num_mc_iterations, ".txt")
+                runtime = time() - start
+                println(runtime)
+                filename = string("output/interacting_", interacting, "/" , method, "/num_particles_",num_particles, "_num_dims_",num_dims , "_lr_", string(learning_rate), "_hidden_", string(num_hidden_nodes),"_sigma_", string(sigma_squared), "_importance_step_length_", string(importance_sampling_step_length), "_num_mc_iterations_", num_mc_iterations, ".txt")
                 open(filename, "w") do io
-                    println(io, "sigma=", sigma_squared, " importance_sampling_step_length=", importance_sampling_step_length, " num_mc_iterations=", num_mc_iterations)
+                    println(io, "sigma=", sigma_squared, " time=", runtime, " importance_sampling_step_length=", importance_sampling_step_length, " num_mc_iterations=", num_mc_iterations)
                     # println(io, "TEST = ", local_energies[1])
                     for e in local_energies
                         println(io, e)
@@ -712,8 +721,21 @@ function grid_search_to_files(num_particles::Int64, num_dims::Int64, method::Str
                 end
 
 
-            # elseif method == "gs"
-            #     local_energies = runMetropolisGibbsSampling()
+            elseif method == "gs"
+                sigma_squared = 0.5
+                system = setUpSystemRandomUniform(num_particles, num_dims, M, num_hidden_nodes, sigma_squared, interacting)
+                start = time()
+                local_energies = runOptimizationGibbsSampling(system, num_optimization_steps, num_mc_iterations, mc_burn_in, learning_rate)
+                runtime = time() - start
+                println(runtime)
+                filename = string("output/interacting_", interacting, "/" , method, "/num_particles_",num_particles, "_num_dims_",num_dims , "_lr_", string(learning_rate), "_hidden_", string(num_hidden_nodes),"_sigma_", string(sigma_squared), "_num_mc_iterations_", num_mc_iterations, ".txt")
+                open(filename, "w") do io
+                    println(io, "sigma=", sigma_squared, " time=", runtime, " num_mc_iterations=", num_mc_iterations)
+                    # println(io, "TEST = ", local_energies[1])
+                    for e in local_energies
+                        println(io, e)
+                    end
+                end
             end
 
 
@@ -749,7 +771,7 @@ function main()
     # @time runOptimizationImportanceSampling(system, num_optimization_steps, num_mc_cycles, mc_burn_in, importance_sampling_step_length, D, learning_rate)
     # @time runOptimizationGibbsSampling(system_gibbs, num_optimization_steps, num_mc_cycles, mc_burn_in, learning_rate)
 
-    grid_search_to_files(num_particles, num_dims, "bf", interacting)
+    write_grid_search_to_files(num_particles, num_dims, "is", interacting)
 end
 
 main()
