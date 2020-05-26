@@ -312,7 +312,7 @@ function metropolisStepBruteForce(nqs::NQS, step_length::Float64, precalc)
 
 end
 
-function runMetorpolisBruteForce(nqs::NQS, num_mc_iterations::Int64, burn_in::Float64, step_length::Float64)
+function runMetorpolisBruteForce(nqs::NQS, num_mc_iterations::Int64, burn_in::Float64, step_length::Float64, write_to_file::Bool)
 
     local_energy_sum::Float64 = 0.0
 
@@ -330,22 +330,24 @@ function runMetorpolisBruteForce(nqs::NQS, num_mc_iterations::Int64, burn_in::Fl
 
     precalc::Array{Float64, 2} = nqs.b + transpose((1.0/nqs.sigma_squared)*(transpose(nqs.x)* nqs.w))
 
+    local_energies::Array{Float64, 1} = zeros(Float64, Int(num_mc_iterations))
+
+    start = time()
+
     for i = 1:num_mc_iterations
+
+        metropolisStepBruteForce(nqs, step_length, precalc)
+
+        precalc = nqs.b + transpose((1.0/nqs.sigma_squared)*(transpose(nqs.x)* nqs.w))
+
+        local_energy = computeLocalEnergy(nqs, precalc)
+
+        local_energies[i] = local_energy
+
+        computePsiParameterDerivative!(nqs, psi_derivative_a, psi_derivative_b, psi_derivative_w, precalc)
 
         if i > burn_in*num_mc_iterations
 
-            # println("TEST1")
-
-            metropolisStepBruteForce(nqs, step_length, precalc)
-            # println("TEST2")
-
-            precalc = nqs.b + transpose((1.0/nqs.sigma_squared)*(transpose(nqs.x)* nqs.w))
-
-            local_energy = computeLocalEnergy(nqs, precalc)
-            # println("TEST3")
-
-            computePsiParameterDerivative!(nqs, psi_derivative_a, psi_derivative_b, psi_derivative_w, precalc)
-            # println("TEST4")
 
             local_energy_sum += local_energy
 
@@ -360,6 +362,20 @@ function runMetorpolisBruteForce(nqs::NQS, num_mc_iterations::Int64, burn_in::Fl
         end
 
     end
+
+    runtime = time() - start
+
+    if write_to_file
+        filename = string("output/MCMC_Runs/interacting_",(nqs.interacting),"/" , "MCMC_Runs_metropolis_brute_force_num_particles_",nqs.num_particles, "_num_dims_",nqs.num_dims , "_hidden_", length(nqs.b), "_sigma_", nqs.sigma_squared, "_mc_step_length_", string(step_length), "_num_mc_iterations_", num_mc_iterations, ".txt")
+        open(filename, "w") do io
+            println(io, "sigma=", nqs.sigma_squared, " time=", runtime, " num_mc_iterations=", num_mc_iterations)
+            # println(io, "TEST = ", local_energies[1])
+            for e in local_energies
+                println(io, e)
+            end
+        end
+    end
+
 
     samples = num_mc_iterations - burn_in*num_mc_iterations
 
@@ -386,9 +402,11 @@ function runOptimizationBruteForce(nqs::NQS, num_iterations::Int64, num_mc_itera
     local_energies::Array{Float64, 2} = zeros(Float64, (num_iterations, 1))
 
     for k = 1:num_iterations
-        local_energy,_grad_a,  _grad_b, _grad_w = runMetorpolisBruteForce(nqs, num_mc_iterations, mc_burn_in, mc_step_length)
+        local_energy,_grad_a,  _grad_b, _grad_w = runMetorpolisBruteForce(nqs, num_mc_iterations, mc_burn_in, mc_step_length, false)
         optimizationStep(nqs, _grad_a, _grad_b, _grad_w, learning_rate)
         local_energies[k] = local_energy
+        println("Iteration = ", k, "    E = ", local_energy)
+
     end
 
     return local_energies
@@ -458,7 +476,7 @@ function metropolisStepImportanceSampling(nqs::NQS, time_step::Float64, D::Float
 
 end
 
-function runMetropolisImportanceSampling(nqs::NQS, num_iterations::Int64, num_mc_iterations::Int64, burn_in::Float64, importance_time_step::Float64, D::Float64)
+function runMetropolisImportanceSampling(nqs::NQS, num_iterations::Int64, num_mc_iterations::Int64, burn_in::Float64, importance_time_step::Float64, D::Float64, write_to_file::Bool)
 
     local_energy_sum::Float64 = 0.0
 
@@ -476,18 +494,26 @@ function runMetropolisImportanceSampling(nqs::NQS, num_iterations::Int64, num_mc
 
     precalc::Array{Float64, 2} = nqs.b + transpose((1.0/nqs.sigma_squared)*(transpose(nqs.x)* nqs.w))
 
+    local_energies::Array{Float64, 1} = zeros(Float64, Int(num_mc_iterations))
+
+    start= time()
+
     for i = 1:num_mc_iterations
+
+        # println("TEST1")
+
+        metropolisStepImportanceSampling(nqs, importance_time_step, D, precalc)
+
+        # println("TEST2")
+        precalc = nqs.b + transpose((1.0/nqs.sigma_squared)*(transpose(nqs.x)* nqs.w))
+
+        local_energy = computeLocalEnergy(nqs, precalc)
+
+        local_energies[i] = local_energy
+
 
         if i > burn_in*num_mc_iterations
 
-            # println("TEST1")
-
-            metropolisStepImportanceSampling(nqs, importance_time_step, D, precalc)
-
-            # println("TEST2")
-            precalc = nqs.b + transpose((1.0/nqs.sigma_squared)*(transpose(nqs.x)* nqs.w))
-
-            local_energy = computeLocalEnergy(nqs, precalc)
 
             computePsiParameterDerivative!(nqs, psi_derivative_a, psi_derivative_b, psi_derivative_w, precalc)
 
@@ -506,6 +532,19 @@ function runMetropolisImportanceSampling(nqs::NQS, num_iterations::Int64, num_mc
             end
         end
 
+    end
+
+    runtime = time() - start
+
+    if write_to_file
+        filename = string("output/MCMC_Runs/interacting_",(nqs.interacting),"/" , "MCMC_Runs_metropolis_importance_sampling_num_particles_",nqs.num_particles, "_num_dims_",nqs.num_dims , "_hidden_", length(nqs.b), "_sigma_", nqs.sigma_squared, "_importance_time_step_length_", string(importance_time_step), "_num_mc_iterations_", num_mc_iterations, ".txt")
+        open(filename, "w") do io
+            println(io, "sigma=", nqs.sigma_squared, " time=", runtime, " num_mc_iterations=", num_mc_iterations)
+            # println(io, "TEST = ", local_energies[1])
+            for e in local_energies
+                println(io, e)
+            end
+        end
     end
 
     samples = num_mc_iterations - burn_in*num_mc_iterations
@@ -534,10 +573,10 @@ function runOptimizationImportanceSampling(nqs::NQS, num_iterations::Int64, num_
     local_energies::Array{Float64, 2} = zeros(Float64, (num_iterations, 1))
 
     for k = 1:num_iterations
-        local_energy, _grad_a, _grad_b, _grad_w = runMetropolisImportanceSampling(nqs, num_iterations, num_mc_iterations, mc_burn_in, importance_time_step, D)
+        local_energy, _grad_a, _grad_b, _grad_w = runMetropolisImportanceSampling(nqs, num_iterations, num_mc_iterations, mc_burn_in, importance_time_step, D, false)
         optimizationStep(nqs, _grad_a, _grad_b, _grad_w, learning_rate)
         local_energies[k] = local_energy
-        # println("Iteration = ", k, "    E = ", local_energy, nqs.h)
+        println("Iteration = ", k, "    E = ", local_energy, nqs.h)
     end
 
     return local_energies
@@ -570,7 +609,7 @@ function metropolisStepGibbsSampling(nqs::NQS, precalc)
 
 end
 
-function runMetropolisGibbsSampling(nqs::NQS, num_iterations::Int64, num_mc_iterations::Int64, burn_in::Float64)
+function runMetropolisGibbsSampling(nqs::NQS, num_iterations::Int64, num_mc_iterations::Int64, burn_in::Float64, write_to_file::Bool)
 
         local_energy_sum::Float64 = 0.0
 
@@ -588,23 +627,28 @@ function runMetropolisGibbsSampling(nqs::NQS, num_iterations::Int64, num_mc_iter
 
         precalc::Array{Float64, 2} = nqs.b + transpose((1.0/nqs.sigma_squared)*(transpose(nqs.x)* nqs.w))
 
+        local_energies::Array{Float64, 1} = zeros(Float64, Int(num_mc_iterations))
+
+        start = time()
 
         for i = 1:num_mc_iterations
 
+            metropolisStepGibbsSampling(nqs, precalc)
+
+            precalc = nqs.b + transpose((1.0/nqs.sigma_squared)*(transpose(nqs.x)* nqs.w))
+
+
+            local_energy = computeLocalEnergyGibbs(nqs, precalc)
+
+            computePsiParameterDerivative!(nqs, psi_derivative_a, psi_derivative_b, psi_derivative_w, precalc)
+
+            local_energies[i] = local_energy
+
+            psi_derivative_a *= 0.5
+            psi_derivative_b *= 0.5
+            psi_derivative_w *= 0.5
+
             if i > burn_in*num_mc_iterations
-
-                metropolisStepGibbsSampling(nqs, precalc)
-
-                precalc = nqs.b + transpose((1.0/nqs.sigma_squared)*(transpose(nqs.x)* nqs.w))
-
-
-                local_energy = computeLocalEnergyGibbs(nqs, precalc)
-
-                computePsiParameterDerivative!(nqs, psi_derivative_a, psi_derivative_b, psi_derivative_w, precalc)
-
-                psi_derivative_a *= 0.5
-                psi_derivative_b *= 0.5
-                psi_derivative_w *= 0.5
 
                 local_energy_sum += local_energy
 
@@ -622,6 +666,19 @@ function runMetropolisGibbsSampling(nqs::NQS, num_iterations::Int64, num_mc_iter
 
             end
 
+        end
+
+        runtime = time() - start
+
+        if write_to_file
+            filename = string("output/MCMC_Runs/interacting_",(nqs.interacting),"/" , "MCMC_Runs_gibbs_sampling_num_particles_",nqs.num_particles, "_num_dims_",nqs.num_dims , "_hidden_", length(nqs.b), "_sigma_", nqs.sigma_squared,"_num_mc_iterations_", num_mc_iterations, ".txt")
+            open(filename, "w") do io
+                println(io, "sigma=", nqs.sigma_squared, " time=", runtime, " num_mc_iterations=", num_mc_iterations)
+                # println(io, "TEST = ", local_energies[1])
+                for e in local_energies
+                    println(io, e)
+                end
+            end
         end
 
         samples = num_mc_iterations - burn_in*num_mc_iterations
@@ -648,10 +705,10 @@ function runOptimizationGibbsSampling(nqs::NQS, num_iterations::Int64, num_mc_it
     local_energies::Array{Float64, 2} = zeros(Float64, (num_iterations, 1))
 
     for k = 1:num_iterations
-        local_energy, _grad_a, _grad_b, _grad_w = runMetropolisGibbsSampling(nqs::NQS, num_iterations::Int64, num_mc_iterations::Int64, mc_burn_in::Float64)
+        local_energy, _grad_a, _grad_b, _grad_w = runMetropolisGibbsSampling(nqs::NQS, num_iterations::Int64, num_mc_iterations::Int64, mc_burn_in::Float64, false)
         optimizationStep(nqs, _grad_a, _grad_b, _grad_w, learning_rate)
         local_energies[k] = local_energy
-        # println(local_energy)
+        println("Iteration = ", k, "    E = ", local_energy)
     end
 
     return local_energies
@@ -672,21 +729,24 @@ function write_grid_search_to_files(num_particles::Int64, num_dims::Int64, metho
 
     M::Int64 = num_particles*num_dims          # Number of visible nodes
 
-    mc_burn_in = 0.2
+    mc_burn_in = 0.1
 
     mc_step_length = 0.5
     importance_sampling_step_length = 0.5
 
-    num_mc_iterations = 100000
-    num_optimization_steps = 200
+    num_mc_iterations = 1000000
+    num_optimization_steps = 300
 
     D = 0.5
 
     for i = 1:len_learning_rates
+
         for j = 1:len_hidden_nodes
 
             num_hidden_nodes = hidden_nodes[j]
             learning_rate = learning_rates[i]
+
+            Random.seed!(133) #133
 
             if method == "bf"
                 sigma_squared = 1.0
@@ -740,8 +800,72 @@ function write_grid_search_to_files(num_particles::Int64, num_dims::Int64, metho
 
 
         end
+
+        Random.seed!(1)
     end
 
+end
+"""
+Function for writing the optimization steps and the last MCMC run to file for
+the optimal params.
+"""
+function write_to_file(method::String)
+
+    Random.seed!(133)
+    # SET UP THE SYSTEM AND BOLTZMAN MACHINE:
+    num_particles = 2                          # Number of particles
+    num_dims = 2                                # Number of dimensions
+    M::Int64 = num_particles*num_dims          # Number of visible nodes
+    N::Int64 = 3                               # Number of hidden nodes
+    sigma_squared = 1.0                        # RBM variance
+    sigma_squared_gibbs = 0.5
+    interacting = false                        # Interacting system?
+
+    mc_burn_in = 0.2                           # Fraction of steps before sampling
+    num_mc_cycles = 1000000                   # Number of steps in the MC algorithm
+    num_optimization_steps = 200                # Number of optimization steps
+
+    brute_force_step_length = 0.5              # Step-length in the Brute-force Metropolis
+    importance_sampling_step_length = 0.5     # Time-step in the importance sampling algorithm
+    learning_rate = 1.0                        # Learning rate in the optimization algorithm
+    D = 0.5                                    # Diffusion constant for importance sampling
+
+    if method=="bf"
+        system = setUpSystemRandomUniform(num_particles, num_dims, M, N, sigma_squared, interacting)
+        start = time()
+        energies = @time runOptimizationBruteForce(system, num_optimization_steps, num_mc_cycles, mc_burn_in, brute_force_step_length, learning_rate)
+        runtime = time() - start
+        runMetorpolisBruteForce(system, num_mc_cycles, mc_burn_in, brute_force_step_length, true)
+        filename = string("output/interacting_" , interacting , "/optimal/bf_optim_num_particles_",num_particles, "_num_dims_",num_dims , "_lr_", string(learning_rate), "_hidden_", string(N), "_sigma_", string(sigma_squared), "_bf_step_length_", string(brute_force_step_length), "_num_mc_iterations_", string(num_mc_cycles), ".txt")
+    end
+
+    if method=="is"
+        system = setUpSystemRandomUniform(num_particles, num_dims, M, N, sigma_squared, interacting)
+        start = time()
+        energies = @time runOptimizationImportanceSampling(system, num_optimization_steps, num_mc_cycles, mc_burn_in, importance_sampling_step_length, D, learning_rate)
+        runtime= time() - start
+        runMetropolisImportanceSampling(system, 10, num_mc_cycles, mc_burn_in, importance_sampling_step_length, D, true)
+        filename = string("output/interacting_" , interacting , "/optimal/is_optim_num_particles_",num_particles, "_num_dims_",num_dims , "_lr_", string(learning_rate), "_hidden_", string(N), "_sigma_", string(sigma_squared), "_is_step_length_", string(importance_sampling_step_length), "_num_mc_iterations_", string(num_mc_cycles), ".txt")
+    end
+
+    if method=="gs"
+        system_gibbs = setUpSystemRandomUniform(num_particles, num_dims, M, N, sigma_squared_gibbs, interacting)
+        start = time()
+        energies = @time runOptimizationGibbsSampling(system_gibbs, num_optimization_steps, num_mc_cycles, mc_burn_in, learning_rate)
+        runtime = time() - start
+        runMetropolisGibbsSampling(system_gibbs, num_optimization_steps, num_mc_cycles, mc_burn_in, true)
+        filename = string("output/interacting_" , interacting , "/optimal/gs_optim_num_particles_",num_particles, "_num_dims_",num_dims , "_lr_", string(learning_rate), "_hidden_", string(N), "_sigma_", string(sigma_squared_gibbs), "_num_mc_iterations_", string(num_mc_cycles), ".txt")
+    end
+    # write_grid_search_to_files(num_particles, num_dims, "gs", interacting)
+
+    open(filename, "w") do io
+        println(io, "sigma=", sigma_squared, " time=", runtime, " num_mc_iterations=", num_mc_cycles)
+        # println(io, "TEST = ", local_energies[1])
+        print("TEST")
+        for e in energies
+            println(io, e)
+        end
+    end
 end
 
 function main()
@@ -750,30 +874,41 @@ function main()
     num_particles = 1                          # Number of particles
     num_dims = 2                               # Number of dimensions
     M::Int64 = num_particles*num_dims          # Number of visible nodes
-    N::Int64 = 2                               # Number of hidden nodes
+    N::Int64 = 4                               # Number of hidden nodes
     sigma_squared = 1.0                        # RBM variance
     sigma_squared_gibbs = 0.5
     interacting = false                        # Interacting system?
 
     mc_burn_in = 0.2                           # Fraction of steps before sampling
-    num_mc_cycles = 20000                    # Number of steps in the MC algorithm
+    num_mc_cycles = 1000000                   # Number of steps in the MC algorithm
     num_optimization_steps = 100                # Number of optimization steps
 
-    brute_force_step_length = 1.0              # Step-length in the Brute-force Metropolis
-    importance_sampling_step_length = 0.05     # Time-step in the importance sampling algorithm
-    learning_rate = 0.05                        # Learning rate in the optimization algorithm
+    brute_force_step_length = 0.5              # Step-length in the Brute-force Metropolis
+    importance_sampling_step_length = 0.5     # Time-step in the importance sampling algorithm
+    learning_rate = 1.0                        # Learning rate in the optimization algorithm
     D = 0.5                                    # Diffusion constant for importance sampling
 
+    # SET UP THE SYSTEM:
     # system = setUpSystemRandomUniform(num_particles, num_dims, M, N, sigma_squared, interacting)
     # system_gibbs = setUpSystemRandomUniform(num_particles, num_dims, M, N, sigma_squared_gibbs, interacting)
 
-    # @time runOptimizationBruteForce(system, num_optimization_steps, num_mc_cycles, mc_burn_in, brute_force_step_length, learning_rate)
-    # @time runOptimizationImportanceSampling(system, num_optimization_steps, num_mc_cycles, mc_burn_in, importance_sampling_step_length, D, learning_rate)
+    # CALCULATE THE ENERGIES FOR EACH OPTIMIZATION STEP:
+    # start = time()
+    # energies = @time runOptimizationBruteForce(system, num_optimization_steps, num_mc_cycles, mc_burn_in, brute_force_step_length, learning_rate)
+    # energies = @time runOptimizationImportanceSampling(system, num_optimization_steps, num_mc_cycles, mc_burn_in, importance_sampling_step_length, D, learning_rate)
     # @time runOptimizationGibbsSampling(system_gibbs, num_optimization_steps, num_mc_cycles, mc_burn_in, learning_rate)
+    # runtime = time() - start
 
-    write_grid_search_to_files(num_particles, num_dims, "is", interacting)
+
+
+    # runMetorpolisBruteForce(system, num_mc_cycles, mc_burn_in, brute_force_step_length, true)
+    # runMetropolisImportanceSampling(system, 10, num_mc_cycles, mc_burn_in, importance_sampling_step_length, D, true)
+
 end
 
-main()
+# main()
+# write_grid_search_to_files(2, 2, "gs", true)
+
+write_to_file("bf")
 
 end
