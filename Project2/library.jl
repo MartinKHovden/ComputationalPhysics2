@@ -817,13 +817,14 @@ function write_to_file(method::String)
     num_dims = 2                                # Number of dimensions
     M::Int64 = num_particles*num_dims          # Number of visible nodes
     N::Int64 = 3                               # Number of hidden nodes
-    sigma_squared = 1.0                        # RBM variance
-    sigma_squared_gibbs = 0.5
-    interacting = false                        # Interacting system?
+    # sigma_squared = 0.8                        # RBM variance
+    sigma_squared_gibbs = 0.55
+    interacting = true                        # Interacting system?
 
     mc_burn_in = 0.2                           # Fraction of steps before sampling
-    num_mc_cycles = 1000000                   # Number of steps in the MC algorithm
-    num_optimization_steps = 200                # Number of optimization steps
+    num_mc_cycles = 10000000                     # Number of steps in the MC algorithm
+    num_mc_cycles_optimization = 500000
+    num_optimization_steps = 300                # Number of optimization steps
 
     brute_force_step_length = 0.5              # Step-length in the Brute-force Metropolis
     importance_sampling_step_length = 0.5     # Time-step in the importance sampling algorithm
@@ -833,33 +834,37 @@ function write_to_file(method::String)
     if method=="bf"
         system = setUpSystemRandomUniform(num_particles, num_dims, M, N, sigma_squared, interacting)
         start = time()
-        energies = @time runOptimizationBruteForce(system, num_optimization_steps, num_mc_cycles, mc_burn_in, brute_force_step_length, learning_rate)
+        energies = @time runOptimizationBruteForce(system, num_optimization_steps, num_mc_cycles_optimization, mc_burn_in, brute_force_step_length, learning_rate)
         runtime = time() - start
         runMetorpolisBruteForce(system, num_mc_cycles, mc_burn_in, brute_force_step_length, true)
-        filename = string("output/interacting_" , interacting , "/optimal/bf_optim_num_particles_",num_particles, "_num_dims_",num_dims , "_lr_", string(learning_rate), "_hidden_", string(N), "_sigma_", string(sigma_squared), "_bf_step_length_", string(brute_force_step_length), "_num_mc_iterations_", string(num_mc_cycles), ".txt")
+        filename = string("output/interacting_" , interacting , "/optimal/bf_optim_num_particles_",num_particles, "_num_dims_",num_dims , "_lr_", string(learning_rate), "_hidden_", string(N), "_sigma_", string(sigma_squared), "_bf_step_length_", string(brute_force_step_length), "_num_mc_iterations_", string(num_mc_cycles_optimization), ".txt")
     end
 
     if method=="is"
         system = setUpSystemRandomUniform(num_particles, num_dims, M, N, sigma_squared, interacting)
         start = time()
-        energies = @time runOptimizationImportanceSampling(system, num_optimization_steps, num_mc_cycles, mc_burn_in, importance_sampling_step_length, D, learning_rate)
+        energies = @time runOptimizationImportanceSampling(system, num_optimization_steps, num_mc_cycles_optimization, mc_burn_in, importance_sampling_step_length, D, learning_rate)
         runtime= time() - start
         runMetropolisImportanceSampling(system, 10, num_mc_cycles, mc_burn_in, importance_sampling_step_length, D, true)
-        filename = string("output/interacting_" , interacting , "/optimal/is_optim_num_particles_",num_particles, "_num_dims_",num_dims , "_lr_", string(learning_rate), "_hidden_", string(N), "_sigma_", string(sigma_squared), "_is_step_length_", string(importance_sampling_step_length), "_num_mc_iterations_", string(num_mc_cycles), ".txt")
+        filename = string("output/interacting_" , interacting , "/optimal/is_optim_num_particles_",num_particles, "_num_dims_",num_dims , "_lr_", string(learning_rate), "_hidden_", string(N), "_sigma_", string(sigma_squared), "_is_step_length_", string(importance_sampling_step_length), "_num_mc_iterations_", string(num_mc_cycles_optimization), ".txt")
     end
 
     if method=="gs"
         system_gibbs = setUpSystemRandomUniform(num_particles, num_dims, M, N, sigma_squared_gibbs, interacting)
         start = time()
-        energies = @time runOptimizationGibbsSampling(system_gibbs, num_optimization_steps, num_mc_cycles, mc_burn_in, learning_rate)
+        energies = @time runOptimizationGibbsSampling(system_gibbs, num_optimization_steps, num_mc_cycles_optimization, mc_burn_in, learning_rate)
         runtime = time() - start
         runMetropolisGibbsSampling(system_gibbs, num_optimization_steps, num_mc_cycles, mc_burn_in, true)
-        filename = string("output/interacting_" , interacting , "/optimal/gs_optim_num_particles_",num_particles, "_num_dims_",num_dims , "_lr_", string(learning_rate), "_hidden_", string(N), "_sigma_", string(sigma_squared_gibbs), "_num_mc_iterations_", string(num_mc_cycles), ".txt")
+        filename = string("output/interacting_" , interacting , "/optimal/gs_optim_num_particles_",num_particles, "_num_dims_",num_dims , "_lr_", string(learning_rate), "_hidden_", string(N), "_sigma_", string(sigma_squared_gibbs), "_num_mc_iterations_", string(num_mc_cycles_optimization), ".txt")
     end
     # write_grid_search_to_files(num_particles, num_dims, "gs", interacting)
 
     open(filename, "w") do io
-        println(io, "sigma=", sigma_squared, " time=", runtime, " num_mc_iterations=", num_mc_cycles)
+        if method =="gs"
+            println(io, "sigma=", sigma_squared_gibbs, " time=", runtime, " num_mc_iterations=", num_mc_cycles)
+        else
+            println(io, "sigma=", sigma_squared, " time=", runtime, " num_mc_iterations=", num_mc_cycles)
+        end
         # println(io, "TEST = ", local_energies[1])
         print("TEST")
         for e in energies
@@ -909,6 +914,6 @@ end
 # main()
 # write_grid_search_to_files(2, 2, "gs", true)
 
-write_to_file("bf")
+write_to_file("gs")
 
 end
