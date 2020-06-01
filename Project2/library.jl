@@ -1,5 +1,7 @@
 module library
 
+export NQS, computeInteractionTerm, setUpSystemRandomUniform, computeLocalEnergy, computePsi, optimizationStep, computeDriftForce
+
 # Library with different methods for Markov Chain Monte Carlo sampling and optmization
 # for simluating two electrons in a potential trap.
 # Code based on the lecture notes written by Morten Hjorth-Jensen for FYS441: Computational Physics II
@@ -13,7 +15,8 @@ using Profile
 """
     NQS
 
-Struct for collecting the variables and parameters in the Boltzman machine.
+Struct for collecting the variables and parameters in the Boltzmann machine.
+Contains information about the system as well as the layers, biases and weights.
 """
 struct NQS
 
@@ -35,6 +38,9 @@ end
 
 """
     computeInteractionTerm()
+
+Computes the interaction term in the hamiltonian. Returns inf if the position
+of two particles is the same. Returns 0 if only one particle.
 """
 function computeInteractionTerm(nqs::NQS)
 
@@ -44,7 +50,6 @@ function computeInteractionTerm(nqs::NQS)
 
         for j = i+nqs.num_dims:nqs.num_dims:nqs.num_particles*nqs.num_dims
 
-            # println(i, " ", j)
             r_ij = 0
 
             for k = 0:nqs.num_dims-1
@@ -70,13 +75,10 @@ end
 """
     computeLocalEnergy(nqs::NQS)
 
-Computes the local energy of the system with the given
+Computes the local energy of the system nqs with the given
 hamiltonian and wavefunction.
 """
 function computeLocalEnergy(nqs::NQS, precalc)
-
-    #Calculates the term that will be used multiple times to increase speed.
-    # precalc::Array{Float64, 2} = nqs.b + transpose((1.0/nqs.sigma_squared)*(transpose(nqs.x)* nqs.w))
 
     #Extracts the number of hidden and visible units.
     num_visible = size(nqs.x)[1]
@@ -110,10 +112,13 @@ function computeLocalEnergy(nqs::NQS, precalc)
 
 end
 
-function computeLocalEnergyGibbs(nqs::NQS, precalc::Array{Float64, 2})
+"""
+    computeLocalEnergGibbsy(nqs::NQS)
 
-    #Calculates the term that will be used multiple times to increase speed.
-    # precalc::Array{Float64, 2} = nqs.b + transpose((1.0/nqs.sigma_squared)*(transpose(nqs.x)* nqs.w))
+Computes the local energy used in Gibbs sampling of the system nqs with the given
+hamiltonian and wavefunction.
+"""
+function computeLocalEnergyGibbs(nqs::NQS, precalc::Array{Float64, 2})
 
     #Extracts the number of hidden and visible units.
     num_visible = size(nqs.x)[1]
@@ -150,15 +155,12 @@ end
 """
     computePsi(nqs::NQS)
 
-Computes the wavefunction value of the system with the given
+Computes the wavefunction value of the system nqs with the given
 hamiltonian.
 """
 function computePsi(nqs::NQS, precalc::Array{Float64, 2})
 
-    # precalc::Array{Float64, 2} = nqs.b + transpose((1.0/nqs.sigma_squared)*(transpose(nqs.x)* nqs.w))
-
     #Extracts the number of hidden and visible units.
-    # num_visible = size(nqs.x)[1]
     num_visible = nqs.num_particles*nqs.num_dims
     num_hidden = size(nqs.h)[1]
 
@@ -180,42 +182,25 @@ function computePsi(nqs::NQS, precalc::Array{Float64, 2})
 end
 
 """
-    computePsiParameterDerivative(nqs::NQS)
+    computePsiParameterDerivative!(nqs::NQS)
 
 Computes the derivatives of psi with respect to the parameters in
-the Boltzman machine.
+the Boltzman machine. Takes the derivative containers as input.
 """
 function computePsiParameterDerivative!(nqs::NQS, psi_derivative_a, psi_derivative_b, psi_derivative_w, precalc::Array{Float64, 2})
 
     num_visible::Int64 = size(nqs.x)[1]
-    # num_visible = nqs.num_particles*nqs.num_dims
-
     num_hidden::Int64 = size(nqs.h)[1]
 
-    #Calculates the term that will be used multiple times to increase speed.
-    # precalc::Array{Float64, 2} = nqs.b + transpose((1.0/nqs.sigma_squared)*(transpose(nqs.x)* nqs.w))
-
-    # psi_derivative_parameter_a::Array{Float64, 2} = zeros(Float64, num_visible ,1)
-    # psi_derivative_parameter_a[:, 1] = (1.0/nqs.sigma_squared)*(nqs.x - nqs.a)
+    #Computes the derivatives of psi with repsect to a
     psi_derivative_parameter_a = (1.0/nqs.sigma_squared)*(nqs.x - nqs.a)
 
-    # println("TEST1")
-
-    # psi_derivative_parameter_b::Array{Float64, 2} = zeros(Float64, num_hidden ,1)
-    # psi_derivative_parameter_b[:, 1] = ones(Float64, num_hidden, 1)./(exp.(-precalc) + ones(Float64, num_hidden, 1))
-    # psi_derivative_parameter_b = ones(Float64, num_hidden, 1)./(exp.(-precalc) + ones(Float64, num_hidden, 1))
-
+    #Computes the derivatives of psi with respect to b
     for n = 1:num_hidden
         psi_derivative_b[n, 1] = 1.0/((exp(-precalc[n]) + 1.0))
     end
 
-    # println("TEST2")
-
-    # print(num_visible)
-    # print(nqs.x)
-    # print(precalc)
-    # psi_derivative_parameter_w::Array{Float64, 2} = zeros(Float64, num_visible, num_hidden)
-    # psi_derivative_parameter_w = nqs.x/(nqs.sigma_squared*(exp.(-precalc)+ones(Float64, num_hidden, 1)))
+    #Computes the derivatives of psi with respect to w
     for n=1:num_hidden
 
         for m=1:num_visible
@@ -225,9 +210,6 @@ function computePsiParameterDerivative!(nqs::NQS, psi_derivative_a, psi_derivati
         end
 
     end
-    # println("TEST3")
-
-    # return psi_derivative_parameter_a, psi_derivative_parameter_b, psi_derivative_parameter_w
 
 end
 
@@ -254,26 +236,10 @@ function setUpSystemRandomUniform(num_particles::Int64, num_dims::Int64, M::Int6
 end
 
 """
-    setUpSystemRandomNorm(M::Int64, N::Int64, sig_sq::Float64 = 0.5, inter::Bool = false)
+    optimizationStep(nqs::NQS, grad_a::Array{Float64, 2}, grad_b::Array{Float64, 2}, grad_w::Array{Float64, 2}, learning_rate::Float64)
 
-Sets up the system parameteres randomly from a uniform distribution.
+Updates the biases and weigths using the gradient descent algorithm.
 """
-# function setUpSystemRandomNorm(M::Int64, N::Int64, sig_sq::Float64 = 0.5, inter::Bool = false)
-#
-#     b = randn(Float64, N, 1)
-#     a = randn(Float64, M, 1)
-#
-#     w = randn(Float64, M, N)
-#
-#     x = randn(Float64, M, 1)
-#     h = randn(Float64, N, 1)
-#
-#     interacting = inter
-#
-#     return NQS(b, a, w, x, h, sig_sq, interacting)
-#
-# end
-
 function optimizationStep(nqs::NQS, grad_a::Array{Float64, 2}, grad_b::Array{Float64, 2}, grad_w::Array{Float64, 2}, learning_rate::Float64)
 
     nqs.a[:] = nqs.a - learning_rate*grad_a
@@ -282,12 +248,19 @@ function optimizationStep(nqs::NQS, grad_a::Array{Float64, 2}, grad_b::Array{Flo
 
 end
 
+"""
+    metropolisStepBruteForce(nqs::NQS, step_length::Float64, precalc)
+
+Does one step in the Metropolis Brute Force algorithm given the brute force step length.
+Precalc is the argument of the exponent, to speed up computations.
+"""
 function metropolisStepBruteForce(nqs::NQS, step_length::Float64, precalc)
 
     #Extracts the number of hidden and visible units.
     num_visible::Float64 = size(nqs.x)[1]
     num_hidden::Float64 = size(nqs.h)[1]
 
+    #Chooses one coordinate randomly to update.
     coordinate::Int64 = rand(1:num_visible)
 
     old_wavefunction_value = computePsi(nqs, precalc)
@@ -303,6 +276,7 @@ function metropolisStepBruteForce(nqs::NQS, step_length::Float64, precalc)
 
     U = rand(Float64)
 
+    #Updates the network according to the Metropolis ratio test
     if U < (new_wavefunction_value^2)/(old_wavefunction_value^2)
         return
     else
@@ -312,10 +286,18 @@ function metropolisStepBruteForce(nqs::NQS, step_length::Float64, precalc)
 
 end
 
+
+"""
+    runMetorpolisBruteForce(nqs::NQS, num_mc_iterations::Int64, burn_in::Float64, step_length::Float64, write_to_file::Bool)
+
+Uses the Metropolis algorithm to produce num_mc_iterations samples from the distribution and writes the samples to file if wanted.
+Only the samples after the burn-in are used to calculate the local energy estimate that is returned.
+"""
 function runMetorpolisBruteForce(nqs::NQS, num_mc_iterations::Int64, burn_in::Float64, step_length::Float64, write_to_file::Bool)
 
     local_energy_sum::Float64 = 0.0
 
+    #Initializes the arrays and matrices to save the derivatives and the sums.
     local_energy_psi_derivative_a_sum::Array{Float64, 2} = zeros(Float64, size(nqs.a))
     local_energy_psi_derivative_b_sum::Array{Float64, 2} = zeros(Float64, size(nqs.b))
     local_energy_psi_derivative_w_sum::Array{Float64, 2} = zeros(Float64, size(nqs.w))
@@ -330,6 +312,7 @@ function runMetorpolisBruteForce(nqs::NQS, num_mc_iterations::Int64, burn_in::Fl
 
     precalc::Array{Float64, 2} = nqs.b + transpose((1.0/nqs.sigma_squared)*(transpose(nqs.x)* nqs.w))
 
+    #Vector to store the energies for each step.
     local_energies::Array{Float64, 1} = zeros(Float64, Int(num_mc_iterations))
 
     start = time()
@@ -397,6 +380,12 @@ function runMetorpolisBruteForce(nqs::NQS, num_mc_iterations::Int64, burn_in::Fl
 
 end
 
+"""
+    runOptimizationBruteForce(nqs::NQS, num_iterations::Int64, num_mc_iterations::Int64, mc_burn_in::Float64, mc_step_length::Float64, learning_rate::Float64)
+
+Runs the optimization algorithm with learning rate learning_rate using Metropolis Brute Force algorithm for num_iterations optimization steps. Each optimization step uses
+num_mc_iterations sampling steps with a step-length of mc_step_length.
+"""
 function runOptimizationBruteForce(nqs::NQS, num_iterations::Int64, num_mc_iterations::Int64, mc_burn_in::Float64, mc_step_length::Float64, learning_rate::Float64)
 
     local_energies::Array{Float64, 2} = zeros(Float64, (num_iterations, 1))
@@ -413,6 +402,12 @@ function runOptimizationBruteForce(nqs::NQS, num_iterations::Int64, num_mc_itera
 
 end
 
+"""
+    computeDriftForce(nqs::NQS, particle_number::Int64, precalc::Array{Float64, 2})
+
+Computes the drift force used in importance sampling. precalc is reused to avoid
+unnecessary computations. 
+"""
 function computeDriftForce(nqs::NQS, particle_number::Int64, precalc::Array{Float64, 2})
 
     m = particle_number
@@ -914,6 +909,6 @@ end
 # main()
 # write_grid_search_to_files(2, 2, "gs", true)
 
-write_to_file("gs")
+# write_to_file("gs")
 
 end
