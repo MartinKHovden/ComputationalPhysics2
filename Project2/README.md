@@ -14,4 +14,4 @@ Unit-tests are found in tests.jl. To run the tests, use
 ```
 julia tests.jl
 ```
-The test-library contains test of the functions for calculating some value. The tests of the sampling algorithms are visual tests in the report to see if they produce good chain of samples and if they converge to the correct values. 
+The test-library contains test of the functions for calculating values. The tests of the sampling algorithms are visual tests in the report which aim to see if they produce good chain of samples and if they converge to the correct values. 
