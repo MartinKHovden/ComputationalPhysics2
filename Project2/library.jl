@@ -1,6 +1,7 @@
 module library
 
 export NQS, computeInteractionTerm, setUpSystemRandomUniform, computeLocalEnergy, computePsi, optimizationStep, computeDriftForce
+export runOptimizationBruteForce, runOptimizationGibbsSampling, runMetropolisImportanceSampling
 
 # Library with different methods for Markov Chain Monte Carlo sampling and optmization
 # for simluating two electrons in a potential trap. Also contains a main function for
@@ -513,7 +514,7 @@ Uses the Metropolis importance sampling algorithm to produce num_mc_iterations s
 Only the samples after the burn-in are used to calculate the local energy and gradient estimate that is returned.
 Calculates the estimate for the local energy as well as the gradients.
 """
-function runMetropolisImportanceSampling(nqs::NQS, num_iterations::Int64, num_mc_iterations::Int64, burn_in::Float64, importance_time_step::Float64, D::Float64, write_to_file::Bool)
+function runMetropolisImportanceSampling(nqs::NQS, num_mc_iterations::Int64, burn_in::Float64, importance_time_step::Float64, D::Float64, write_to_file::Bool)
 
     local_energy_sum::Float64 = 0.0
 
@@ -613,7 +614,7 @@ function runOptimizationImportanceSampling(nqs::NQS, num_iterations::Int64, num_
     local_energies::Array{Float64, 2} = zeros(Float64, (num_iterations, 1))
 
     for k = 1:num_iterations
-        local_energy, _grad_a, _grad_b, _grad_w = runMetropolisImportanceSampling(nqs, num_iterations, num_mc_iterations, mc_burn_in, importance_time_step, D, false)
+        local_energy, _grad_a, _grad_b, _grad_w = runMetropolisImportanceSampling(nqs, num_mc_iterations, mc_burn_in, importance_time_step, D, false)
         optimizationStep(nqs, _grad_a, _grad_b, _grad_w, learning_rate)
         local_energies[k] = local_energy
         println("Iteration = ", k, "    E = ", local_energy, nqs.h)
@@ -657,9 +658,9 @@ end
 
 Uses the Gibbs sampling algorithm to produce num_mc_iterations samples from the distribution and writes the samples to file if wanted.
 Only the samples after the burn-in are used to calculate the local energy and gradient estimate that is returned.
-Calculates the estimate for the local energy as well as the gradients.
+Calculates the estimate for the local energy as well as the gradients. NWS is the struct representing the network.
 """
-function runMetropolisGibbsSampling(nqs::NQS, num_iterations::Int64, num_mc_iterations::Int64, burn_in::Float64, write_to_file::Bool)
+function runMetropolisGibbsSampling(nqs::NQS, num_mc_iterations::Int64, burn_in::Float64, write_to_file::Bool)
 
         local_energy_sum::Float64 = 0.0
 
@@ -759,7 +760,7 @@ end
     runOptimizationGibbsSampling(nqs::NQS, num_iterations::Int64, num_mc_iterations::Int64, mc_burn_in::Float64, learning_rate::Float64)
 
 Runs the optimization algorithm with learning rate learning_rate using Gibbs Sampling algorithm for num_iterations optimization steps. Each optimization step uses
-num_mc_iterations sampling steps.
+num_mc_iterations sampling steps. NQS is the struct representing the network.
 """
 function runOptimizationGibbsSampling(nqs::NQS, num_iterations::Int64, num_mc_iterations::Int64, mc_burn_in::Float64, learning_rate::Float64)
 
@@ -767,7 +768,7 @@ function runOptimizationGibbsSampling(nqs::NQS, num_iterations::Int64, num_mc_it
 
     # Does the optimzation steps with gradient descent for each iteration.
     for k = 1:num_iterations
-        local_energy, _grad_a, _grad_b, _grad_w = runMetropolisGibbsSampling(nqs::NQS, num_iterations::Int64, num_mc_iterations::Int64, mc_burn_in::Float64, false)
+        local_energy, _grad_a, _grad_b, _grad_w = runMetropolisGibbsSampling(nqs::NQS, num_mc_iterations::Int64, mc_burn_in::Float64, false)
         optimizationStep(nqs, _grad_a, _grad_b, _grad_w, learning_rate)
         local_energies[k] = local_energy
         println("Iteration = ", k, "    E = ", local_energy)
@@ -780,7 +781,8 @@ end
 """
     grid_search_to_files()
 
-Function for doing a grid search and writing the results from each run to files.
+Function for doing a grid search and writing the results from each run to files. Sets up the system with the
+given number of particles and dimensions, and uses the method given as input. Method can be "bf", "is" or "gs".
 """
 function write_grid_search_to_files(num_particles::Int64, num_dims::Int64, method::String, interacting::Bool)
     learning_rates::Array{Float64,1} = [1.0, 0.1, 0.01]
@@ -869,7 +871,7 @@ function write_grid_search_to_files(num_particles::Int64, num_dims::Int64, metho
 end
 """
 Function for writing the optimization steps and the last MCMC run to file for
-the optimal params.
+the optimal params. method is the method to be used. MEthod can be "bf", "is" or "gs"
 """
 function write_to_file(method::String)
 
@@ -907,7 +909,7 @@ function write_to_file(method::String)
         start = time()
         energies = @time runOptimizationImportanceSampling(system, num_optimization_steps, num_mc_cycles_optimization, mc_burn_in, importance_sampling_step_length, D, learning_rate)
         runtime= time() - start
-        runMetropolisImportanceSampling(system, 10, num_mc_cycles, mc_burn_in, importance_sampling_step_length, D, true)
+        runMetropolisImportanceSampling(system, num_mc_cycles, mc_burn_in, importance_sampling_step_length, D, true)
         filename = string("output/interacting_" , interacting , "/optimal/is_optim_num_particles_",num_particles, "_num_dims_",num_dims , "_lr_", string(learning_rate), "_hidden_", string(N), "_sigma_", string(sigma_squared), "_is_step_length_", string(importance_sampling_step_length), "_num_mc_iterations_", string(num_mc_cycles_optimization), ".txt")
     end
 
@@ -916,7 +918,7 @@ function write_to_file(method::String)
         start = time()
         energies = @time runOptimizationGibbsSampling(system_gibbs, num_optimization_steps, num_mc_cycles_optimization, mc_burn_in, learning_rate)
         runtime = time() - start
-        runMetropolisGibbsSampling(system_gibbs, num_optimization_steps, num_mc_cycles, mc_burn_in, true)
+        runMetropolisGibbsSampling(system_gibbs, num_mc_cycles, mc_burn_in, true)
         filename = string("output/interacting_" , interacting , "/optimal/gs_optim_num_particles_",num_particles, "_num_dims_",num_dims , "_lr_", string(learning_rate), "_hidden_", string(N), "_sigma_", string(sigma_squared_gibbs), "_num_mc_iterations_", string(num_mc_cycles_optimization), ".txt")
     end
     # write_grid_search_to_files(num_particles, num_dims, "gs", interacting)
@@ -933,7 +935,7 @@ function write_to_file(method::String)
         end
     end
 end
-# 
+#
 # """
 #     function main()
 #

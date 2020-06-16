@@ -24,22 +24,23 @@ function main()
     ##################################################################################################################
 
     ############## SET UP THE SYSTEM #################################################################################
-    system = setUpSystemRandomUniform(num_particles, num_dims, M, N, sigma_squared, interacting)
+    # system = setUpSystemRandomUniform(num_particles, num_dims, M, N, sigma_squared, interacting)
     system_gibbs = setUpSystemRandomUniform(num_particles, num_dims, M, N, sigma_squared_gibbs, interacting)
     ##################################################################################################################
 
     ############## CALCULATE THE ENERGIES FOR EACH OPTIMIZATION STEP #################################################
     start = time()
-    @time runOptimizationBruteForce(system, num_optimization_steps, num_mc_cycles, mc_burn_in, brute_force_step_length, learning_rate)
+    print("Test")
+    # @time runOptimizationBruteForce(system, num_optimization_steps, num_mc_cycles, mc_burn_in, brute_force_step_length, learning_rate)
     # @time runOptimizationImportanceSampling(system, num_optimization_steps, 100000, mc_burn_in, importance_sampling_step_length, D, learning_rate)
-    # @time runOptimizationGibbsSampling(system_gibbs, num_optimization_steps, num_mc_cycles, mc_burn_in, learning_rate)
+    @time runOptimizationGibbsSampling(system_gibbs, num_optimization_steps, num_mc_cycles, mc_burn_in, learning_rate)
     runtime = time() - start
     ##################################################################################################################
 
 
     ############## RUN A FINAL SIMULATION WITH THE OPTIMAL WEIGHTS FROM ABOVE ########################################
     # runMetorpolisBruteForce(system, num_mc_cycles, mc_burn_in, brute_force_step_length, true)
-    runMetropolisImportanceSampling(system, 10, num_mc_cycles, mc_burn_in, importance_sampling_step_length, D, true)
+    runMetropolisImportanceSampling(system, num_mc_cycles, mc_burn_in, importance_sampling_step_length, D, true)
     ##################################################################################################################
 
     ############## RUN A GRID SEARCH FOR GIVEN METHOD ################################################################
@@ -51,3 +52,5 @@ function main()
     # write_to_file("gs")
     ##################################################################################################################
 end
+
+main()
