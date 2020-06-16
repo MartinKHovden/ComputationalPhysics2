@@ -12,7 +12,7 @@ export runOptimizationBruteForce, runOptimizationGibbsSampling, runMetropolisImp
 
 using LinearAlgebra
 using Random
-using Profile
+using Profile 
 
 
 """

@@ -19,7 +19,7 @@ function main()
 
     brute_force_step_length = 0.5              # Step-length in the Brute-force Metropolis
     importance_sampling_step_length = 0.005     # Time-step in the importance sampling algorithm
-    learning_rate = 1.0                        # Learning rate in the optimization algorithm
+    learning_rate = 1.0                        # Learning rate in the optimization algorithm 
     D = 0.5                                    # Diffusion constant for importance sampling
     ##################################################################################################################
 

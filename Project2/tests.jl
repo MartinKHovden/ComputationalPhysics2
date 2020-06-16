@@ -1,7 +1,7 @@
 include("library.jl")
 using .library
 using Test
-using Random
+using Random 
 
 @testset "test setUpSystemRandomUniform 1 particle in 2 dims" begin
     num_particles = 1                          # Number of particles

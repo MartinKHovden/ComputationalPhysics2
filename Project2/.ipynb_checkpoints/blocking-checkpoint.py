@@ -14,7 +14,7 @@ def data_path(dat_id):
 from numpy import log2, zeros, mean, var, sum, loadtxt, arange, array, cumsum, dot, transpose, diagonal, sqrt
 from numpy.linalg import inv
 
-def block(x):
+def block(x): 
     # preliminaries
     n = len(x)
     d = int(log2(n))
