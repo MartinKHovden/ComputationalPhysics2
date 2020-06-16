@@ -3,7 +3,8 @@ module library
 export NQS, computeInteractionTerm, setUpSystemRandomUniform, computeLocalEnergy, computePsi, optimizationStep, computeDriftForce
 
 # Library with different methods for Markov Chain Monte Carlo sampling and optmization
-# for simluating two electrons in a potential trap.
+# for simluating two electrons in a potential trap. Also contains a main function for
+# running the various methods.
 # Code based on the lecture notes written by Morten Hjorth-Jensen for FYS441: Computational Physics II
 # and the code provided for the course at:
 # https://github.com/CompPhysics/ComputationalPhysics2/blob/gh-pages/doc/Programs/BoltzmannMachines/MLcpp/src/
@@ -11,6 +12,7 @@ export NQS, computeInteractionTerm, setUpSystemRandomUniform, computeLocalEnergy
 using LinearAlgebra
 using Random
 using Profile
+
 
 """
     NQS
@@ -23,12 +25,17 @@ struct NQS
     num_particles::Int64
     num_dims::Int64
 
+    # Bias for hidden layer
     b::Array{Float64, 2}
+    # Bias for visible layer
     a::Array{Float64, 2}
 
+    # Weights
     w::Array{Float64, 2}
 
+    # Visible layer
     x::Array{Float64, 2}
+    # Hidden layer
     h::Array{Float64, 2}
 
     sigma_squared::Float64
@@ -46,8 +53,10 @@ function computeInteractionTerm(nqs::NQS)
 
     interaction_term = 0
 
+    # Loops over the outer sum
     for i = 1:nqs.num_dims:nqs.num_particles*nqs.num_dims
 
+        # Loops over the inner sum from the current value of the outer sum
         for j = i+nqs.num_dims:nqs.num_dims:nqs.num_particles*nqs.num_dims
 
             r_ij = 0
@@ -86,13 +95,16 @@ function computeLocalEnergy(nqs::NQS, precalc)
 
     local_energy::Float64 = 0
 
+    # Computes the local energy by looping over the visible and hidden nodes.
     for m = 1:num_visible
 
+        # Computes the first part of the derivative and double derivative of the log of the wavefunction.
         ln_psi_derivative = -(1.0/nqs.sigma_squared)*(nqs.x[m] - nqs.a[m])
         ln_psi_double_derivative = -1.0/nqs.sigma_squared
 
         for n=1:num_hidden
 
+            # Adds the rest of the derivatives that varies with the hidden layer.
             ln_psi_derivative += (1.0/nqs.sigma_squared)*nqs.w[m,n]/(exp(-precalc[n]) + 1.0)
             ln_psi_double_derivative += (1.0/nqs.sigma_squared^2)*(exp(precalc[n])/((exp(precalc[n])+1)^2))*(nqs.w[m,n]^2)
 
@@ -104,6 +116,7 @@ function computeLocalEnergy(nqs::NQS, precalc)
 
     local_energy *= 0.5
 
+    # Add the interaction term if the system should account for interactions.
     if nqs.interacting
         local_energy += computeInteractionTerm(nqs)
     end
@@ -113,10 +126,11 @@ function computeLocalEnergy(nqs::NQS, precalc)
 end
 
 """
-    computeLocalEnergGibbsy(nqs::NQS)
+    computeLocalEnergGibbs(nqs::NQS)
 
 Computes the local energy used in Gibbs sampling of the system nqs with the given
-hamiltonian and wavefunction.
+hamiltonian and wavefunction. Same as the computeLocalEnergy(...) method, but all terms
+are multiplied by a factor of 0.5.
 """
 function computeLocalEnergyGibbs(nqs::NQS, precalc::Array{Float64, 2})
 
@@ -156,7 +170,7 @@ end
     computePsi(nqs::NQS)
 
 Computes the wavefunction value of the system nqs with the given
-hamiltonian.
+hamiltonian. Implementation is as described in the article.
 """
 function computePsi(nqs::NQS, precalc::Array{Float64, 2})
 
@@ -184,8 +198,9 @@ end
 """
     computePsiParameterDerivative!(nqs::NQS)
 
-Computes the derivatives of psi with respect to the parameters in
-the Boltzman machine. Takes the derivative containers as input.
+Computes the derivatives of psi with respect to the biases and weights in
+the Boltzman machine. Takes containers for the gradients as input and
+manipulates their values.
 """
 function computePsiParameterDerivative!(nqs::NQS, psi_derivative_a, psi_derivative_b, psi_derivative_w, precalc::Array{Float64, 2})
 
@@ -220,13 +235,15 @@ Sets up the system parameteres randomly from a uniform distribution.
 """
 function setUpSystemRandomUniform(num_particles::Int64, num_dims::Int64, M::Int64, N::Int64, sig_sq::Float64 = 0.5, inter::Bool = false)
 
+    # Initializes the biases
     b = rand(Float64, N, 1) .-0.5
     a = rand(Float64, M, 1) .-0.5
 
+    # Initializes the weights.
     w = rand(Float64, M, N) .-0.5
 
+    # Initializes the visble and the hidden layer.
     x = rand(Float64, M, 1) .-0.5
-    # h = rand(Float64, N, 1)
     h = rand(0:1, N, 1)
 
     interacting = inter
@@ -238,7 +255,7 @@ end
 """
     optimizationStep(nqs::NQS, grad_a::Array{Float64, 2}, grad_b::Array{Float64, 2}, grad_w::Array{Float64, 2}, learning_rate::Float64)
 
-Updates the biases and weigths using the gradient descent algorithm.
+Updates the biases and weigths of the NQS using the gradient descent algorithm.
 """
 function optimizationStep(nqs::NQS, grad_a::Array{Float64, 2}, grad_b::Array{Float64, 2}, grad_w::Array{Float64, 2}, learning_rate::Float64)
 
@@ -252,6 +269,7 @@ end
     metropolisStepBruteForce(nqs::NQS, step_length::Float64, precalc)
 
 Does one step in the Metropolis Brute Force algorithm given the brute force step length.
+Accepts the step if ratio is larger than a uniformly generated number.
 Precalc is the argument of the exponent, to speed up computations.
 """
 function metropolisStepBruteForce(nqs::NQS, step_length::Float64, precalc)
@@ -272,6 +290,7 @@ function metropolisStepBruteForce(nqs::NQS, step_length::Float64, precalc)
 
     precalc = nqs.b + transpose((1.0/nqs.sigma_squared)*(transpose(nqs.x)* nqs.w))
 
+    # Computes the new wave function value given the updates coordinates.
     new_wavefunction_value = computePsi(nqs, precalc)
 
     U = rand(Float64)
@@ -290,8 +309,9 @@ end
 """
     runMetorpolisBruteForce(nqs::NQS, num_mc_iterations::Int64, burn_in::Float64, step_length::Float64, write_to_file::Bool)
 
-Uses the Metropolis algorithm to produce num_mc_iterations samples from the distribution and writes the samples to file if wanted.
-Only the samples after the burn-in are used to calculate the local energy estimate that is returned.
+Uses the Metropolis Brute force algorithm to produce num_mc_iterations samples from the distribution and writes the samples to file if wanted.
+Only the samples after the burn-in are used to calculate the local energy and gradient estimate that is returned.
+Calculates the estimate for the local energy as well as the gradients.
 """
 function runMetorpolisBruteForce(nqs::NQS, num_mc_iterations::Int64, burn_in::Float64, step_length::Float64, write_to_file::Bool)
 
@@ -319,16 +339,20 @@ function runMetorpolisBruteForce(nqs::NQS, num_mc_iterations::Int64, burn_in::Fl
 
     for i = 1:num_mc_iterations
 
+        # Does one step with the brute force method.
         metropolisStepBruteForce(nqs, step_length, precalc)
 
         precalc = nqs.b + transpose((1.0/nqs.sigma_squared)*(transpose(nqs.x)* nqs.w))
 
+        # Computes the contribution to Monte carlo estimate of the local energy given the new system configuration.
         local_energy = computeLocalEnergy(nqs, precalc)
 
         local_energies[i] = local_energy
 
+        # Computes the contribution to the gradients given the new system configuration.
         computePsiParameterDerivative!(nqs, psi_derivative_a, psi_derivative_b, psi_derivative_w, precalc)
 
+        # Calculates the estimates of the energy and derivatives. Uses only those after the burn-in period.
         if i > burn_in*num_mc_iterations
 
 
@@ -348,11 +372,11 @@ function runMetorpolisBruteForce(nqs::NQS, num_mc_iterations::Int64, burn_in::Fl
 
     runtime = time() - start
 
+    # Writes the results to file if true.
     if write_to_file
         filename = string("output/MCMC_Runs/interacting_",(nqs.interacting),"/" , "MCMC_Runs_metropolis_brute_force_num_particles_",nqs.num_particles, "_num_dims_",nqs.num_dims , "_hidden_", length(nqs.b), "_sigma_", nqs.sigma_squared, "_mc_step_length_", string(step_length), "_num_mc_iterations_", num_mc_iterations, ".txt")
         open(filename, "w") do io
             println(io, "sigma=", nqs.sigma_squared, " time=", runtime, " num_mc_iterations=", num_mc_iterations)
-            # println(io, "TEST = ", local_energies[1])
             for e in local_energies
                 println(io, e)
             end
@@ -360,6 +384,7 @@ function runMetorpolisBruteForce(nqs::NQS, num_mc_iterations::Int64, burn_in::Fl
     end
 
 
+    # Updates the final estimates of local energy and gradients.
     samples = num_mc_iterations - burn_in*num_mc_iterations
 
     mc_local_energy = local_energy_sum/samples
@@ -390,6 +415,7 @@ function runOptimizationBruteForce(nqs::NQS, num_iterations::Int64, num_mc_itera
 
     local_energies::Array{Float64, 2} = zeros(Float64, (num_iterations, 1))
 
+    # Loops for running multiple gradient descent steps.
     for k = 1:num_iterations
         local_energy,_grad_a,  _grad_b, _grad_w = runMetorpolisBruteForce(nqs, num_mc_iterations, mc_burn_in, mc_step_length, false)
         optimizationStep(nqs, _grad_a, _grad_b, _grad_w, learning_rate)
@@ -406,21 +432,21 @@ end
     computeDriftForce(nqs::NQS, particle_number::Int64, precalc::Array{Float64, 2})
 
 Computes the drift force used in importance sampling. precalc is reused to avoid
-unnecessary computations. 
+unnecessary computations.
 """
 function computeDriftForce(nqs::NQS, particle_number::Int64, precalc::Array{Float64, 2})
 
+    #The particle that we want to find the drift force for.
     m = particle_number
-
-    #Calculates the term that will be used multiple times to increase speed.
-    # precalc::Array{Float64, 2} = nqs.b + transpose((1.0/nqs.sigma_squared)*(transpose(nqs.x)* nqs.w))
 
     #Extracts the number of hidden and visible units.
     num_visible = size(nqs.x)[1]
     num_hidden = size(nqs.h)[1]
 
+    #Calculates the first term in the drift force.
     drift_force = -(1.0/nqs.sigma_squared)*(nqs.x[m]- nqs.a[m])
 
+    #Calculates the second term in the drift force.
     for n=1:num_hidden
         drift_force += (1.0/nqs.sigma_squared)*nqs.w[m,n]/(exp(-precalc[n]) + 1.0)
     end
@@ -431,12 +457,20 @@ function computeDriftForce(nqs::NQS, particle_number::Int64, precalc::Array{Floa
 
 end
 
+"""
+    metropolisStepImportanceSampling(nqs::NQS, time_step::Float64, D::Float64, precalc)
+
+Does one step in the Metropolis Importance Sampling algorithm given the time step.
+Proposed a new step, and accepts it according to the importance sampling ratio.
+Precalc is the argument of the exponent, to speed up computations.
+"""
 function metropolisStepImportanceSampling(nqs::NQS, time_step::Float64, D::Float64, precalc)
 
     #Extracts the number of hidden and visible units.
     num_visible = size(nqs.x)[1]
     num_hidden = size(nqs.h)[1]
 
+    #Chooses a random particle to update the position for.
     coordinate::Int64 = rand(1:num_visible)
 
     old_wavefunction_value = computePsi(nqs, precalc)
@@ -447,13 +481,13 @@ function metropolisStepImportanceSampling(nqs::NQS, time_step::Float64, D::Float
     old_coordinate = nqs.x[coordinate]
     nqs.x[coordinate] += D*current_drift_force*time_step + randn(Float64)*sqrt(time_step)
 
-
     precalc = nqs.b + transpose((1.0/nqs.sigma_squared)*(transpose(nqs.x)* nqs.w))
 
     new_drift_force = computeDriftForce(nqs, coordinate, precalc)
 
     new_wavefunction_value = computePsi(nqs, precalc)
 
+    #Calculates greens function:
     greens_function_argument = (old_coordinate - nqs.x[coordinate] - D*time_step*new_drift_force)^2 - (nqs.x[coordinate] - old_coordinate - D*time_step*current_drift_force)^2
 
     greens_function_argument /= (4.0*D*time_step)
@@ -462,6 +496,7 @@ function metropolisStepImportanceSampling(nqs::NQS, time_step::Float64, D::Float
 
     U = rand(Float64)
 
+    #Decides if the new step is accepted or not with respect to U and the importance sampling ratio.
     if U < greens_function*(new_wavefunction_value^2)/(old_wavefunction_value^2)
         return
     else
@@ -471,10 +506,18 @@ function metropolisStepImportanceSampling(nqs::NQS, time_step::Float64, D::Float
 
 end
 
+"""
+    runMetorpolisImportanceSampling(nqs::NQS, num_iterations::Int64, num_mc_iterations::Int64, burn_in::Float64, importance_time_step::Float64, D::Float64, write_to_file::Bool)
+
+Uses the Metropolis importance sampling algorithm to produce num_mc_iterations samples from the distribution and writes the samples to file if wanted.
+Only the samples after the burn-in are used to calculate the local energy and gradient estimate that is returned.
+Calculates the estimate for the local energy as well as the gradients.
+"""
 function runMetropolisImportanceSampling(nqs::NQS, num_iterations::Int64, num_mc_iterations::Int64, burn_in::Float64, importance_time_step::Float64, D::Float64, write_to_file::Bool)
 
     local_energy_sum::Float64 = 0.0
 
+    #Initializes the arrays and matrices to save the derivatives and the sums.
     local_energy_psi_derivative_a_sum::Array{Float64, 2} = zeros(Float64, size(nqs.a))
     local_energy_psi_derivative_b_sum::Array{Float64, 2} = zeros(Float64, size(nqs.b))
     local_energy_psi_derivative_w_sum::Array{Float64, 2} = zeros(Float64, size(nqs.w))
@@ -495,20 +538,17 @@ function runMetropolisImportanceSampling(nqs::NQS, num_iterations::Int64, num_mc
 
     for i = 1:num_mc_iterations
 
-        # println("TEST1")
-
+        # Does one step with importance sampling metropolis.
         metropolisStepImportanceSampling(nqs, importance_time_step, D, precalc)
 
-        # println("TEST2")
         precalc = nqs.b + transpose((1.0/nqs.sigma_squared)*(transpose(nqs.x)* nqs.w))
 
+        # Computes the local energy given this new configuration.
         local_energy = computeLocalEnergy(nqs, precalc)
 
         local_energies[i] = local_energy
 
-
         if i > burn_in*num_mc_iterations
-
 
             computePsiParameterDerivative!(nqs, psi_derivative_a, psi_derivative_b, psi_derivative_w, precalc)
 
@@ -523,7 +563,7 @@ function runMetropolisImportanceSampling(nqs::NQS, num_iterations::Int64, num_mc
             psi_derivative_w_sum += psi_derivative_w
 
             if i % 100 == 0
-                # println("iter = ", i, "E_l = ", computeLocalEnergy(nqs))
+                println("iter = ", i, "E_l = ", computeLocalEnergy(nqs))
             end
         end
 
@@ -544,6 +584,7 @@ function runMetropolisImportanceSampling(nqs::NQS, num_iterations::Int64, num_mc
 
     samples = num_mc_iterations - burn_in*num_mc_iterations
 
+    # Updates the final estimates of the local energy as well as the gradients.
     mc_local_energy = local_energy_sum/samples
 
     mc_local_energy_psi_derivative_a = local_energy_psi_derivative_a_sum/samples
@@ -558,11 +599,15 @@ function runMetropolisImportanceSampling(nqs::NQS, num_iterations::Int64, num_mc
     local_energy_derivative_b = 2*(mc_local_energy_psi_derivative_b - mc_local_energy*mc_psi_derivative_b)
     local_energy_derivative_w = 2*(mc_local_energy_psi_derivative_w - mc_local_energy*mc_psi_derivative_w)
 
-    # println(mc_local_energy)
-
     return mc_local_energy, local_energy_derivative_a, local_energy_derivative_b, local_energy_derivative_w
 end
 
+"""
+    runOptimizationImportanceSampling(nqs::NQS, num_iterations::Int64, num_mc_iterations::Int64, mc_burn_in::Float64, importance_time_step::Float64, D::Float64, learning_rate::Float64)
+
+Runs the optimization algorithm with learning rate learning_rate using Metropolis Importance Sampling algorithm for num_iterations optimization steps. Each optimization step uses
+num_mc_iterations sampling steps with a time step of importance time step. D is the diffusion constant.
+"""
 function runOptimizationImportanceSampling(nqs::NQS, num_iterations::Int64, num_mc_iterations::Int64, mc_burn_in::Float64, importance_time_step::Float64, D::Float64, learning_rate::Float64)
 
     local_energies::Array{Float64, 2} = zeros(Float64, (num_iterations, 1))
@@ -577,37 +622,48 @@ function runOptimizationImportanceSampling(nqs::NQS, num_iterations::Int64, num_
     return local_energies
 end
 
+"""
+    metropolisStepGibbsSampling(nqs::NQS, precalc)
+
+Does one step in the Metropolis Gibbs Sampling algorithm.
+Updates all hidden and visible nodes given the posterior distributions.
+"""
 function metropolisStepGibbsSampling(nqs::NQS, precalc)
 
     #Extracts the number of hidden and visible units.
     num_visible = size(nqs.x)[1]
     num_hidden = size(nqs.h)[1]
 
-    #Calculates the term that will be used multiple times to increase speed.
-
     mean = nqs.a + nqs.w*nqs.h
     variance = nqs.sigma_squared
 
+    #Update the visible nodes
     for i = 1:num_visible
         nqs.x[i] = sqrt(variance)*randn(Float64) + mean[i]
     end
 
     U = rand(Float64)
 
-    # temp::Array{Float64,2} = nqs.b + transpose((1.0/nqs.sigma_squared)*(transpose(nqs.x)* nqs.w))
-
+    #Update the hidden nodes
     for j = 1:num_hidden
-        # temp::Float64 = nqs.b[j] + (1.0/nqs.sigma_squared)*dot(nqs.x,nqs.w[:,j])
 
         nqs.h[j] = U < 1.0/(exp(-precalc[j]) + 1.0)
     end
 
 end
 
+"""
+    runMetorpolisGibbsSampling(nqs::NQS, num_iterations::Int64, num_mc_iterations::Int64, burn_in::Float64, write_to_file::Bool)
+
+Uses the Gibbs sampling algorithm to produce num_mc_iterations samples from the distribution and writes the samples to file if wanted.
+Only the samples after the burn-in are used to calculate the local energy and gradient estimate that is returned.
+Calculates the estimate for the local energy as well as the gradients.
+"""
 function runMetropolisGibbsSampling(nqs::NQS, num_iterations::Int64, num_mc_iterations::Int64, burn_in::Float64, write_to_file::Bool)
 
         local_energy_sum::Float64 = 0.0
 
+        #Initializes the arrays and matrices to save the derivatives and the sums.
         local_energy_psi_derivative_a_sum::Array{Float64, 2} = zeros(Float64, size(nqs.a))
         local_energy_psi_derivative_b_sum::Array{Float64, 2} = zeros(Float64, size(nqs.b))
         local_energy_psi_derivative_w_sum::Array{Float64, 2} = zeros(Float64, size(nqs.w))
@@ -628,13 +684,15 @@ function runMetropolisGibbsSampling(nqs::NQS, num_iterations::Int64, num_mc_iter
 
         for i = 1:num_mc_iterations
 
+            # Does one iteration with Gibbs sampling and updates all visible and hidden nodes.
             metropolisStepGibbsSampling(nqs, precalc)
 
             precalc = nqs.b + transpose((1.0/nqs.sigma_squared)*(transpose(nqs.x)* nqs.w))
 
-
+            # Computes the local energy given the updated configuration.
             local_energy = computeLocalEnergyGibbs(nqs, precalc)
 
+            # Computes the gradients given the updated configurations.
             computePsiParameterDerivative!(nqs, psi_derivative_a, psi_derivative_b, psi_derivative_w, precalc)
 
             local_energies[i] = local_energy
@@ -643,6 +701,7 @@ function runMetropolisGibbsSampling(nqs::NQS, num_iterations::Int64, num_mc_iter
             psi_derivative_b *= 0.5
             psi_derivative_w *= 0.5
 
+            # Adds the contriubution to the local energy and gradient for this iteration.
             if i > burn_in*num_mc_iterations
 
                 local_energy_sum += local_energy
@@ -678,6 +737,7 @@ function runMetropolisGibbsSampling(nqs::NQS, num_iterations::Int64, num_mc_iter
 
         samples = num_mc_iterations - burn_in*num_mc_iterations
 
+        # Updates the final estimates of local energy and gradients.
         mc_local_energy = local_energy_sum/samples
 
         mc_local_energy_psi_derivative_a = local_energy_psi_derivative_a_sum/samples
@@ -695,10 +755,17 @@ function runMetropolisGibbsSampling(nqs::NQS, num_iterations::Int64, num_mc_iter
         return mc_local_energy, local_energy_derivative_a, local_energy_derivative_b, local_energy_derivative_w
 end
 
+"""
+    runOptimizationGibbsSampling(nqs::NQS, num_iterations::Int64, num_mc_iterations::Int64, mc_burn_in::Float64, learning_rate::Float64)
+
+Runs the optimization algorithm with learning rate learning_rate using Gibbs Sampling algorithm for num_iterations optimization steps. Each optimization step uses
+num_mc_iterations sampling steps.
+"""
 function runOptimizationGibbsSampling(nqs::NQS, num_iterations::Int64, num_mc_iterations::Int64, mc_burn_in::Float64, learning_rate::Float64)
 
     local_energies::Array{Float64, 2} = zeros(Float64, (num_iterations, 1))
 
+    # Does the optimzation steps with gradient descent for each iteration.
     for k = 1:num_iterations
         local_energy, _grad_a, _grad_b, _grad_w = runMetropolisGibbsSampling(nqs::NQS, num_iterations::Int64, num_mc_iterations::Int64, mc_burn_in::Float64, false)
         optimizationStep(nqs, _grad_a, _grad_b, _grad_w, learning_rate)
@@ -860,53 +927,59 @@ function write_to_file(method::String)
         else
             println(io, "sigma=", sigma_squared, " time=", runtime, " num_mc_iterations=", num_mc_cycles)
         end
-        # println(io, "TEST = ", local_energies[1])
         print("TEST")
         for e in energies
             println(io, e)
         end
     end
 end
-
-function main()
-
-    # SET UP THE SYSTEM AND BOLTZMAN MACHINE:
-    num_particles = 1                          # Number of particles
-    num_dims = 2                               # Number of dimensions
-    M::Int64 = num_particles*num_dims          # Number of visible nodes
-    N::Int64 = 4                               # Number of hidden nodes
-    sigma_squared = 1.0                        # RBM variance
-    sigma_squared_gibbs = 0.5
-    interacting = false                        # Interacting system?
-
-    mc_burn_in = 0.2                           # Fraction of steps before sampling
-    num_mc_cycles = 1000000                   # Number of steps in the MC algorithm
-    num_optimization_steps = 100                # Number of optimization steps
-
-    brute_force_step_length = 0.5              # Step-length in the Brute-force Metropolis
-    importance_sampling_step_length = 0.5     # Time-step in the importance sampling algorithm
-    learning_rate = 1.0                        # Learning rate in the optimization algorithm
-    D = 0.5                                    # Diffusion constant for importance sampling
-
-    # SET UP THE SYSTEM:
-    # system = setUpSystemRandomUniform(num_particles, num_dims, M, N, sigma_squared, interacting)
-    # system_gibbs = setUpSystemRandomUniform(num_particles, num_dims, M, N, sigma_squared_gibbs, interacting)
-
-    # CALCULATE THE ENERGIES FOR EACH OPTIMIZATION STEP:
-    # start = time()
-    # energies = @time runOptimizationBruteForce(system, num_optimization_steps, num_mc_cycles, mc_burn_in, brute_force_step_length, learning_rate)
-    # energies = @time runOptimizationImportanceSampling(system, num_optimization_steps, num_mc_cycles, mc_burn_in, importance_sampling_step_length, D, learning_rate)
-    # @time runOptimizationGibbsSampling(system_gibbs, num_optimization_steps, num_mc_cycles, mc_burn_in, learning_rate)
-    # runtime = time() - start
-
-
-
-    # runMetorpolisBruteForce(system, num_mc_cycles, mc_burn_in, brute_force_step_length, true)
-    # runMetropolisImportanceSampling(system, 10, num_mc_cycles, mc_burn_in, importance_sampling_step_length, D, true)
-
-end
-
+# 
+# """
+#     function main()
+#
+# This is the function where the simulations can be run.
+# """
+# function main()
+#
+#     # SET UP THE SYSTEM AND BOLTZMAN MACHINE:
+#     num_particles = 1                          # Number of particles
+#     num_dims = 2                               # Number of dimensions
+#     M::Int64 = num_particles*num_dims          # Number of visible nodes
+#     N::Int64 = 2                               # Number of hidden nodes
+#     sigma_squared = 1.0                        # RBM variance
+#     sigma_squared_gibbs = 0.5
+#     interacting = false                        # Interacting system?
+#
+#     mc_burn_in = 0.2                           # Fraction of steps before sampling
+#     num_mc_cycles = 500000                   # Number of steps in the MC algorithm
+#     num_optimization_steps = 100                # Number of optimization steps
+#
+#     brute_force_step_length = 0.5              # Step-length in the Brute-force Metropolis
+#     importance_sampling_step_length = 0.005     # Time-step in the importance sampling algorithm
+#     learning_rate = 1.0                        # Learning rate in the optimization algorithm
+#     D = 0.5                                    # Diffusion constant for importance sampling
+#
+#     # SET UP THE SYSTEM. For Brute force or importance sampling, use the first. For Gibbs, use the second:
+#     # system = setUpSystemRandomUniform(num_particles, num_dims, M, N, sigma_squared, interacting)
+#     # system_gibbs = setUpSystemRandomUniform(num_particles, num_dims, M, N, sigma_squared_gibbs, interacting)
+#
+#     # CALCULATE THE ENERGIES FOR EACH OPTIMIZATION STEP
+#     start = time()
+#     # @time runOptimizationBruteForce(system, num_optimization_steps, num_mc_cycles, mc_burn_in, brute_force_step_length, learning_rate)
+#     # @time runOptimizationImportanceSampling(system, num_optimization_steps, 100000, mc_burn_in, importance_sampling_step_length, D, learning_rate)
+#     # @time runOptimizationGibbsSampling(system_gibbs, num_optimization_steps, num_mc_cycles, mc_burn_in, learning_rate)
+#     runtime = time() - start
+#
+#
+#
+#     # runMetorpolisBruteForce(system, num_mc_cycles, mc_burn_in, brute_force_step_length, true)
+#     runMetropolisImportanceSampling(system, 10, num_mc_cycles, mc_burn_in, importance_sampling_step_length, D, true)
+#
+# end
+#
 # main()
+
+
 # write_grid_search_to_files(2, 2, "gs", true)
 
 # write_to_file("gs")
